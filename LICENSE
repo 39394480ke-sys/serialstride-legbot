@@ -1,0 +1,25 @@
+SerialStride Legbot - Licensing Notice
+
+Copyright (c) 2026 39394480ke-sys
+
+This repository contains materials with different licensing terms:
+
+1. Original source code in firmware/, tools/, and simulation/ is licensed
+   under the MIT License in LICENSES/MIT.txt unless a file states otherwise.
+
+2. Hardware materials in hardware/, including native CAD files, STEP/STP
+   exports, drawings, schematics, and manufacturing files, are provided for
+   viewing only. All rights are reserved. No permission is granted to copy,
+   modify, redistribute, manufacture, sell, or use these materials
+   commercially without prior written permission from the copyright holder.
+
+3. Documentation, logs, photographs, images, and videos are all rights
+   reserved unless a file states otherwise.
+
+4. Third-party materials remain subject to their respective licenses and
+   copyrights.
+
+Public visibility of this repository does not place its contents in the
+public domain and does not make the hardware open source. Rights required
+by the GitHub Terms of Service for hosting and repository features are not
+an additional license to the public.

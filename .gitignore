@@ -1,5 +1,33 @@
 .DS_Store
+**/.DS_Store
+
+# Build outputs
+build/
 **/build/
-serial-port-assistant.app/
+cmake-build-*/
+*.bin
+*.elf
+*.map
+
+# Editors and temporary files
+.vscode/
+*.tmp
+*.bak
+*.autosave
+~$*
+
+# Runtime logs are ignored unless deliberately archived under docs.
+*.log
+!docs/**/logs/
+!docs/**/logs/**
+
+# SolidWorks temporary and recovery files
+*.sldprt~
+*.sldasm~
+*.slddrw~
+
+# Local applications, downloads, and large video captures
+*.app/
 /ML1.0.zip
 /教程 1.png
+assets/videos/

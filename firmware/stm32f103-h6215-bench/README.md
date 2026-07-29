@@ -44,9 +44,13 @@ boot.
 
 ## Build
 
+From the repository root:
+
 ```bash
-cmake -S . -B build -G Ninja
-cmake --build build
+cmake -S firmware/stm32f103-h6215-bench \
+  -B firmware/stm32f103-h6215-bench/build \
+  -G Ninja
+cmake --build firmware/stm32f103-h6215-bench/build
 ```
 
 ## Flash
@@ -54,13 +58,16 @@ cmake --build build
 Keep the H6215 24 V supply off. Flash while `BOOT0=1`, `BOOT1=0`:
 
 ```bash
+SERIAL_PORT=/dev/cu.usbserial-XXXX
+
 stm32flash -b 115200 \
-  -w build/stm32f103_boot_test.bin \
-  -v /dev/cu.usbserial-140
+  -w firmware/stm32f103-h6215-bench/build/stm32f103_boot_test.bin \
+  -v "$SERIAL_PORT"
 ```
 
 The macOS device name can change after moving the adapter to another USB
-port or hub. Run `ls /dev/cu.usbserial-*` and use the device currently shown.
+port or hub. Run `ls /dev/cu.usbserial-*` and replace `XXXX` with the device
+currently shown.
 
 After flashing, power the board off, set `BOOT0=0` and `BOOT1=0`, then
 power it on again.
