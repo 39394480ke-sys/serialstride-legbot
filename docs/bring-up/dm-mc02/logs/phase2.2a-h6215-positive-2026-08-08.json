@@ -197,6 +197,8 @@
       "absence_of_log_markers": ["SAFETY_TRIP", "TX_FAILURE"]
     },
     "controller_owned_live_post_motion_disabled_can_observation": {
+      "status": "satisfied",
+      "criterion": "Later controller-owned live observation of disabled state and CAN health after the completed test.",
       "wheel_health_pair_count": 8,
       "uptime_ms": {
         "first": 2813552,
@@ -301,9 +303,8 @@
       "captured_ms": 3002,
       "required_ms": 5000,
       "shortfall_ms": 1998,
-      "next_step": "Browser-only continuity remains unavailable; it is retained as an export limitation. The separate controller-owned seven-second sample satisfies the later live disabled/CAN observation, with its distinct interval documented above."
+      "resolution": "Browser-only continuity remains unavailable and is retained as an export limitation. This is not a pending live-sampling criterion: the separate controller-owned seven-second sample satisfies the later live disabled/CAN observation, with its distinct interval documented above."
     },
-    "live_serial_sampling_after_archive": "Satisfied by the controller-owned read-only sample documented above: eight pairs over 7000 ms, SERIAL_COMMAND_BYTES_SENT=0, and no external CAN/motion command sent.",
     "protocol_positive_to_physical_direction_mapping": "Unverified because the user did not specify a viewpoint or mechanism reference side.",
     "negative_motion": "Unverified and not implemented.",
     "continuous_motion": "Unverified and not implemented.",
