@@ -215,23 +215,44 @@ MotionDecision motion_controller_step(MotionController *controller,
         }
         return decision(MOTION_ACTION_NONE, MOTION_EVENT_NONE, NULL);
     case MOTION_ENABLE_WAIT:
-        reason = enable_wait_trip_reason(safety);
-        if (reason != NULL) {
+        if ((!safety->feedback_valid ||
+             safety->feedback_age_ms > MOTION_RUNTIME_FEEDBACK_MAX_AGE_MS) &&
+            (safety->can_passive || safety->can_bus_off)) {
             return start_fault_shutdown(controller, safety->now_ms,
-                                        MOTION_EVENT_SAFETY_TRIP, reason);
+                                        MOTION_EVENT_SAFETY_TRIP,
+                                        "CAN_NOT_ACTIVE");
         }
-        if (safety->motor_state == MOTION_STATE_ENABLED) {
-            controller->state = MOTION_RUNNING;
-            controller->phase_started_ms = safety->now_ms;
-            controller->last_action_ms = safety->now_ms;
-            return decision(MOTION_ACTION_POSITIVE_VELOCITY,
-                            MOTION_EVENT_RUNNING, NULL);
+        if (safety->feedback_valid &&
+            safety->feedback_age_ms <= MOTION_RUNTIME_FEEDBACK_MAX_AGE_MS) {
+            reason = enable_wait_trip_reason(safety);
+            if (reason != NULL) {
+                return start_fault_shutdown(controller, safety->now_ms,
+                                            MOTION_EVENT_SAFETY_TRIP, reason);
+            }
+            if (safety->motor_state == MOTION_STATE_ENABLED &&
+                safety->now_ms - controller->phase_started_ms <=
+                    MOTION_ENABLE_WAIT_MS) {
+                controller->state = MOTION_RUNNING;
+                controller->phase_started_ms = safety->now_ms;
+                controller->last_action_ms = safety->now_ms;
+                return decision(MOTION_ACTION_POSITIVE_VELOCITY,
+                                MOTION_EVENT_RUNNING, NULL);
+            }
+            if (safety->motor_state != MOTION_STATE_DISABLED) {
+                return start_fault_shutdown(controller, safety->now_ms,
+                                            MOTION_EVENT_SAFETY_TRIP,
+                                            "STATE_NOT_ENABLED");
+            }
         }
         if (elapsed_at_least(safety->now_ms, controller->phase_started_ms,
                              MOTION_ENABLE_WAIT_MS)) {
+            reason = !safety->feedback_valid ||
+                             safety->feedback_age_ms >
+                                 MOTION_RUNTIME_FEEDBACK_MAX_AGE_MS
+                         ? "FEEDBACK_STALE"
+                         : "STATE_NOT_ENABLED";
             return start_fault_shutdown(controller, safety->now_ms,
-                                        MOTION_EVENT_SAFETY_TRIP,
-                                        "STATE_NOT_ENABLED");
+                                        MOTION_EVENT_SAFETY_TRIP, reason);
         }
         return decision(MOTION_ACTION_NONE, MOTION_EVENT_NONE, NULL);
     case MOTION_RUNNING:

@@ -52,6 +52,22 @@ static void assert_shutdown_after_next_millisecond(
     assert(controller->state == MOTION_IDLE_DISABLED);
 }
 
+static void assert_enable_wait_trip(MotionSafetySnapshot startup,
+                                    MotionSafetySnapshot safety,
+                                    const char *expected_reason)
+{
+    MotionController controller;
+    MotionDecision decision;
+
+    assert(arm_and_start(&controller, &startup).action == MOTION_ACTION_ENABLE);
+    decision = motion_controller_step(&controller, &safety);
+    assert(decision.action == MOTION_ACTION_ZERO_VELOCITY);
+    assert(decision.event == MOTION_EVENT_SAFETY_TRIP);
+    assert(strcmp(decision.reason, expected_reason) == 0);
+    assert(controller.state == MOTION_FAULT_DISABLE);
+    assert_shutdown_after_next_millisecond(&controller, safety);
+}
+
 static void test_normalizes_commands_and_ignores_line_endings(void)
 {
     MotionSafetySnapshot safety = safe_disabled_snapshot(1000u);
@@ -234,6 +250,105 @@ static void test_emergency_stop_requests_zero_from_every_state(void)
     }
 }
 
+static void test_enable_wait_graces_start_eligible_stale_feedback(void)
+{
+    static const uint32_t accepted_feedback_ages_ms[] = {101u, 500u};
+
+    for (uint8_t index = 0u;
+         index < sizeof(accepted_feedback_ages_ms) /
+                     sizeof(accepted_feedback_ages_ms[0]);
+         ++index) {
+        MotionSafetySnapshot safety = safe_disabled_snapshot(1000u);
+        MotionController controller;
+        MotionDecision decision;
+
+        safety.feedback_age_ms = accepted_feedback_ages_ms[index];
+        decision = arm_and_start(&controller, &safety);
+        assert(decision.action == MOTION_ACTION_ENABLE);
+        assert(controller.state == MOTION_ENABLE_WAIT);
+
+        decision = motion_controller_step(&controller, &safety);
+        assert(decision.action == MOTION_ACTION_NONE);
+        assert(decision.event == MOTION_EVENT_NONE);
+        assert(controller.state == MOTION_ENABLE_WAIT);
+
+        safety.now_ms = 1099u;
+        safety.feedback_age_ms += 99u;
+        decision = motion_controller_step(&controller, &safety);
+        assert(decision.action == MOTION_ACTION_NONE);
+        assert(decision.event == MOTION_EVENT_NONE);
+        assert(controller.state == MOTION_ENABLE_WAIT);
+    }
+}
+
+static void test_enable_wait_starts_on_fresh_safe_enabled_feedback(void)
+{
+    MotionSafetySnapshot safety = safe_disabled_snapshot(1000u);
+    MotionController controller;
+    MotionDecision decision;
+
+    safety.feedback_age_ms = 500u;
+    assert(arm_and_start(&controller, &safety).action == MOTION_ACTION_ENABLE);
+    assert(motion_controller_step(&controller, &safety).action ==
+           MOTION_ACTION_NONE);
+
+    safety = safe_enabled_snapshot(1050u);
+    decision = motion_controller_step(&controller, &safety);
+    assert(decision.action == MOTION_ACTION_POSITIVE_VELOCITY);
+    assert(decision.event == MOTION_EVENT_RUNNING);
+    assert(controller.state == MOTION_RUNNING);
+}
+
+static void test_enable_wait_deadline_requires_fresh_enabled_feedback(void)
+{
+    MotionSafetySnapshot startup = safe_disabled_snapshot(1000u);
+    MotionSafetySnapshot safety = safe_disabled_snapshot(1100u);
+
+    startup.feedback_age_ms = 101u;
+    safety.feedback_age_ms = 201u;
+    assert_enable_wait_trip(startup, safety, "FEEDBACK_STALE");
+
+    startup = safe_disabled_snapshot(1000u);
+    safety = safe_disabled_snapshot(1100u);
+    assert_enable_wait_trip(startup, safety, "STATE_NOT_ENABLED");
+
+    startup = safe_disabled_snapshot(1000u);
+    safety = safe_enabled_snapshot(1101u);
+    assert_enable_wait_trip(startup, safety, "STATE_NOT_ENABLED");
+}
+
+static void test_enable_wait_trips_on_fresh_unsafe_feedback_during_grace(void)
+{
+    MotionSafetySnapshot startup = safe_disabled_snapshot(1000u);
+    MotionSafetySnapshot safety = safe_disabled_snapshot(1050u);
+
+    safety.velocity_millirad_s = 801;
+    assert_enable_wait_trip(startup, safety, "SPEED_LIMIT");
+
+    safety = safe_disabled_snapshot(1050u);
+    safety.mos_temperature_c = 60u;
+    assert_enable_wait_trip(startup, safety, "TEMPERATURE_LIMIT");
+
+    safety = safe_disabled_snapshot(1050u);
+    safety.motor_state = 8u;
+    assert_enable_wait_trip(startup, safety, "STATE_NOT_ENABLED");
+}
+
+static void test_enable_wait_trips_on_can_fault_with_stale_feedback(void)
+{
+    MotionSafetySnapshot startup = safe_disabled_snapshot(1000u);
+    MotionSafetySnapshot safety;
+
+    startup.feedback_age_ms = 101u;
+    safety = startup;
+    safety.can_passive = true;
+    assert_enable_wait_trip(startup, safety, "CAN_NOT_ACTIVE");
+
+    safety = startup;
+    safety.can_bus_off = true;
+    assert_enable_wait_trip(startup, safety, "CAN_NOT_ACTIVE");
+}
+
 static void test_runs_the_fixed_positive_timeline(void)
 {
     MotionSafetySnapshot safety = safe_disabled_snapshot(0u);
@@ -365,6 +480,11 @@ int main(void)
     test_arm_timeout_handles_tick_wraparound();
     test_rejects_each_unsafe_start_condition();
     test_emergency_stop_requests_zero_from_every_state();
+    test_enable_wait_graces_start_eligible_stale_feedback();
+    test_enable_wait_starts_on_fresh_safe_enabled_feedback();
+    test_enable_wait_deadline_requires_fresh_enabled_feedback();
+    test_enable_wait_trips_on_fresh_unsafe_feedback_during_grace();
+    test_enable_wait_trips_on_can_fault_with_stale_feedback();
     test_runs_the_fixed_positive_timeline();
     test_runtime_safety_trips_zero_then_disable();
     test_transmit_failure_requests_zero_then_disable();
