@@ -32,3 +32,13 @@ cc -std=c11 -Wall -Wextra -Werror \
   -o "$motion_out"
 
 "$motion_out"
+
+usb_queue_out="${TMPDIR:-/tmp}/dm-mc02-usb-command-queue-tests"
+
+cc -std=c11 -Wall -Wextra -Werror \
+  -I"$root/app" \
+  "$root/tests/test_usb_command_queue.c" \
+  "$root/app/usb_command_queue.c" \
+  -o "$usb_queue_out"
+
+"$usb_queue_out"

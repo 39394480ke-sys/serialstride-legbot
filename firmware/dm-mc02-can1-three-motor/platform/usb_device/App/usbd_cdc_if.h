@@ -30,7 +30,7 @@
 #include "usbd_cdc.h"
 
 /* USER CODE BEGIN INCLUDE */
-
+#include "usb_command_queue.h"
 /* USER CODE END INCLUDE */
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
@@ -128,4 +128,3 @@ uint8_t CDC_Transmit_HS(uint8_t* Buf, uint16_t Len);
 #endif
 
 #endif /* __USBD_CDC_IF_H__ */
-

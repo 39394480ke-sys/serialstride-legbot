@@ -29,6 +29,7 @@ add_executable(${TARGET}
     app/main.c
     app/h6215_protocol.c
     app/phase1_monitor.c
+    app/usb_command_queue.c
     platform/src/board.c
     platform/src/gpio.c
     platform/src/stm32h7xx_hal_msp.c
