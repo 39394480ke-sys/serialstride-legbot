@@ -29,6 +29,7 @@ add_executable(${TARGET}
     app/main.c
     app/h6215_protocol.c
     app/motion_controller.c
+    app/motion_io.c
     app/phase1_monitor.c
     app/usb_command_queue.c
     platform/src/board.c

@@ -42,3 +42,14 @@ cc -std=c11 -Wall -Wextra -Werror \
   -o "$usb_queue_out"
 
 "$usb_queue_out"
+
+motion_io_out="${TMPDIR:-/tmp}/dm-mc02-motion-io-tests"
+
+cc -std=c11 -Wall -Wextra -Werror \
+  -I"$root/app" \
+  "$root/tests/test_motion_io.c" \
+  "$root/app/motion_io.c" \
+  "$root/app/motion_controller.c" \
+  -o "$motion_io_out"
+
+"$motion_io_out"

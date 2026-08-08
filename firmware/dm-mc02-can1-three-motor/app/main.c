@@ -8,6 +8,7 @@
 #include "h6215_protocol.h"
 #include "main.h"
 #include "motion_controller.h"
+#include "motion_io.h"
 #include "phase1_monitor.h"
 #include "usb_device.h"
 #include "usb_command_queue.h"
@@ -48,29 +49,78 @@ static const uint8_t h6215_poll_registers[] = {
     H6215_REGISTER_T_MAX,
 };
 
-static void try_send_boot_banner(bool can1_ok, bool *sent)
+static bool append_log_format(char *record, size_t capacity, size_t *used,
+                              const char *format, ...)
 {
-    static uint8_t banner[] =
+    va_list arguments;
+    int length;
+
+    if (*used >= capacity) {
+        return false;
+    }
+    va_start(arguments, format);
+    length = vsnprintf(&record[*used], capacity - *used, format, arguments);
+    va_end(arguments);
+    if (length <= 0 || length >= (int)(capacity - *used)) {
+        return false;
+    }
+    *used += (size_t)length;
+    return true;
+}
+
+static bool enqueue_log_record(MotionLogQueue *queue, uint32_t *dropped_logs,
+                               const char *record, size_t length)
+{
+    if (!motion_log_queue_push(queue, record, length)) {
+        (*dropped_logs)++;
+        return false;
+    }
+    return true;
+}
+
+static void service_log_queue(MotionLogQueue *queue, uint32_t *dropped_logs)
+{
+    static uint8_t tx_buffers[2][MOTION_LOG_RECORD_CAPACITY];
+    static uint8_t tx_buffer_index;
+    const uint8_t *record;
+    uint16_t length;
+    uint8_t result;
+
+    if (!motion_log_queue_peek(queue, &record, &length)) {
+        return;
+    }
+    memcpy(tx_buffers[tx_buffer_index], record, length);
+    result = CDC_Transmit_HS(tx_buffers[tx_buffer_index], length);
+    if (result != USBD_OK) {
+        (*dropped_logs)++;
+        return;
+    }
+    motion_log_queue_pop(queue);
+    tx_buffer_index ^= 1u;
+}
+
+static bool enqueue_boot_banner(bool can1_ok, MotionLogQueue *queue,
+                                uint32_t *dropped_logs)
+{
+    static const char banner[] =
         "MC02_BOOT\r\n"
         "CLOCK_OK SYSCLK=480000000 HCLK=240000000\r\n"
         "TIMER_OK TICK_HZ=1000\r\n"
         "CAN1_INIT_OK BITRATE=1000000 TX=GUARDED_MOTION\r\n"
         "H6215_GUARDED_MOTION COMMANDS=S,A,G,X TARGET=+0.200rad/s\r\n"
         "DEFAULT_STATE=DISABLED AUTO_MOTION=OFF\r\n";
-    static uint8_t failure_banner[] =
+    static const char failure_banner[] =
         "MC02_BOOT\r\n"
         "CLOCK_OK SYSCLK=480000000 HCLK=240000000\r\n"
         "TIMER_OK TICK_HZ=1000\r\n"
         "CAN1_INIT_ERROR\r\n"
         "H6215_GUARDED_MOTION COMMANDS=S,A,G,X TARGET=+0.200rad/s\r\n"
         "DEFAULT_STATE=DISABLED AUTO_MOTION=OFF\r\n";
-    uint8_t *message = can1_ok ? banner : failure_banner;
-    uint16_t length = can1_ok ? (uint16_t)(sizeof(banner) - 1u)
-                              : (uint16_t)(sizeof(failure_banner) - 1u);
+    const char *message = can1_ok ? banner : failure_banner;
+    size_t length = can1_ok ? sizeof(banner) - 1u
+                            : sizeof(failure_banner) - 1u;
 
-    if (CDC_Transmit_HS(message, length) == USBD_OK) {
-        *sent = true;
-    }
+    return enqueue_log_record(queue, dropped_logs, message, length);
 }
 
 static int32_t float_to_milli(float value)
@@ -199,11 +249,9 @@ static void recover_can1_if_needed(WheelStatus *wheel,
     }
 }
 
-static void try_send_wheel_status(const WheelStatus *wheel, uint32_t now_ms,
-                                  uint32_t *dropped_logs)
+static int format_wheel_status(char *buffer, size_t capacity,
+                               const WheelStatus *wheel, uint32_t now_ms)
 {
-    static uint8_t buffers[2][320];
-    static uint32_t buffer_index;
     char p_max[16];
     char v_max[16];
     char t_max[16];
@@ -224,7 +272,7 @@ static void try_send_wheel_status(const WheelStatus *wheel, uint32_t now_ms,
     format_milli(torque, sizeof(torque),
                  wheel->feedback.torque_millinewton_m);
     length = snprintf(
-        (char *)buffers[buffer_index], sizeof(buffers[0]),
+        buffer, capacity,
         "[WHEEL] ONLINE=%u ID=1 MST_ID=0 STATE=%s SW=%s MODE=%u "
         "P_MAX=%s V_MAX=%s T_MAX=%s PARAM_MASK=0x%02X RX=%lu "
         "P=%s V=%s T=%s TMOS=%u TROTOR=%u DISABLE_PROBE=%u "
@@ -242,26 +290,19 @@ static void try_send_wheel_status(const WheelStatus *wheel, uint32_t now_ms,
         wheel->disable_probe_sent,
         (unsigned long)wheel->tx_ok, (unsigned long)wheel->tx_failed,
         (unsigned long)wheel->can_recoveries);
-
-    if (length <= 0 || length >= (int)sizeof(buffers[0]) ||
-        CDC_Transmit_HS(buffers[buffer_index], (uint16_t)length) != USBD_OK) {
-        (*dropped_logs)++;
-        return;
-    }
-    buffer_index ^= 1u;
+    return length;
 }
 
-static void try_send_diagnostics(const Phase1Monitor *monitor, bool can1_ok,
-                                 const Can1Status *can_status,
-                                 bool can_status_valid, uint32_t uptime_ms,
-                                 uint32_t *dropped_logs)
+static int format_diagnostics(char *buffer, size_t capacity,
+                              const Phase1Monitor *monitor, bool can1_ok,
+                              const Can1Status *can_status,
+                              bool can_status_valid, uint32_t uptime_ms,
+                              uint32_t dropped_logs)
 {
-    static uint8_t buffers[2][192];
-    static uint32_t buffer_index;
     int length;
 
     if (can1_ok && can_status_valid) {
-        length = snprintf((char *)buffers[buffer_index], sizeof(buffers[0]),
+        length = snprintf(buffer, capacity,
                           "HEALTH uptime_ms=%lu loops=%lu missed=%lu period_min_ms=%lu "
                           "period_max_ms=%lu can1_tec=%u can1_rec=%u can1_lec=%u "
                           "warning=%u passive=%u bus_off=%u dropped_logs=%lu\r\n",
@@ -275,42 +316,84 @@ static void try_send_diagnostics(const Phase1Monitor *monitor, bool can1_ok,
                           can_status->rx_error_count,
                           can_status->last_error_code, can_status->warning,
                           can_status->error_passive, can_status->bus_off,
-                          (unsigned long)*dropped_logs);
+                          (unsigned long)dropped_logs);
     } else {
-        length = snprintf((char *)buffers[buffer_index], sizeof(buffers[0]),
+        length = snprintf(buffer, capacity,
                           "HEALTH uptime_ms=%lu loops=%lu missed=%lu "
                           "CAN1_STATUS_ERROR dropped_logs=%lu\r\n",
                           (unsigned long)uptime_ms,
                           (unsigned long)monitor->loop_count,
                           (unsigned long)monitor->missed_ticks,
-                          (unsigned long)*dropped_logs);
+                          (unsigned long)dropped_logs);
     }
-
-    if (length <= 0 || length >= (int)sizeof(buffers[0]) ||
-        CDC_Transmit_HS(buffers[buffer_index], (uint16_t)length) != USBD_OK) {
-        (*dropped_logs)++;
-        return;
-    }
-    buffer_index ^= 1u;
+    return length;
 }
 
-static void try_send_motion_log(uint32_t *dropped_logs, const char *format, ...)
+static bool append_formatted_line(char *record, size_t capacity, size_t *used,
+                                  int length)
 {
-    static uint8_t buffers[2][128];
-    static uint32_t buffer_index;
-    va_list arguments;
-    int length;
+    if (length <= 0 || length >= (int)(capacity - *used)) {
+        return false;
+    }
+    *used += (size_t)length;
+    return true;
+}
 
-    va_start(arguments, format);
-    length = vsnprintf((char *)buffers[buffer_index], sizeof(buffers[0]),
-                       format, arguments);
-    va_end(arguments);
-    if (length <= 0 || length >= (int)sizeof(buffers[0]) ||
-        CDC_Transmit_HS(buffers[buffer_index], (uint16_t)length) != USBD_OK) {
+static void enqueue_status_report(MotionLogQueue *queue,
+                                  uint32_t *dropped_logs,
+                                  const WheelStatus *wheel,
+                                  const Phase1Monitor *monitor, bool can1_ok,
+                                  const Can1Status *can_status,
+                                  bool can_status_valid, uint32_t now_ms)
+{
+    char record[MOTION_LOG_RECORD_CAPACITY];
+    size_t used = 0u;
+
+    if (!append_log_format(record, sizeof(record), &used,
+                           "STATUS_REQUESTED\r\n") ||
+        !append_formatted_line(
+            record, sizeof(record), &used,
+            format_wheel_status(&record[used], sizeof(record) - used, wheel,
+                                now_ms)) ||
+        !append_formatted_line(
+            record, sizeof(record), &used,
+            format_diagnostics(&record[used], sizeof(record) - used, monitor,
+                               can1_ok, can_status, can_status_valid, now_ms,
+                               *dropped_logs))) {
         (*dropped_logs)++;
         return;
     }
-    buffer_index ^= 1u;
+    (void)enqueue_log_record(queue, dropped_logs, record, used);
+}
+
+static void enqueue_periodic_telemetry(
+    MotionLogQueue *queue, uint32_t *dropped_logs, bool wheel_due,
+    bool health_due, const WheelStatus *wheel, const Phase1Monitor *monitor,
+    bool can1_ok, const Can1Status *can_status, bool can_status_valid,
+    uint32_t now_ms)
+{
+    char record[MOTION_LOG_RECORD_CAPACITY];
+    size_t used = 0u;
+    bool formatted = true;
+
+    if (wheel_due) {
+        formatted = append_formatted_line(
+            record, sizeof(record), &used,
+            format_wheel_status(&record[used], sizeof(record) - used, wheel,
+                                now_ms));
+    }
+    if (formatted && health_due) {
+        formatted = append_formatted_line(
+            record, sizeof(record), &used,
+            format_diagnostics(&record[used], sizeof(record) - used, monitor,
+                               can1_ok, can_status, can_status_valid, now_ms,
+                               *dropped_logs));
+    }
+    if (!formatted || used == 0u) {
+        (*dropped_logs)++;
+        return;
+    }
+    (void)enqueue_log_record(queue, dropped_logs, record, used);
 }
 
 static MotionSafetySnapshot build_motion_safety_snapshot(
@@ -385,76 +468,69 @@ static const char *motion_action_name(MotionAction action)
     }
 }
 
-static void log_motion_event(MotionEvent event, const char *reason,
-                             uint32_t *dropped_logs)
+static bool append_motion_event(char *record, size_t capacity, size_t *used,
+                                MotionEvent event, const char *reason)
 {
     switch (event) {
     case MOTION_EVENT_STATUS:
-        try_send_motion_log(dropped_logs, "STATUS_REQUESTED\r\n");
-        break;
+        return append_log_format(record, capacity, used,
+                                 "STATUS_REQUESTED\r\n");
     case MOTION_EVENT_ARMED:
-        try_send_motion_log(dropped_logs,
-                            "MOTION_ARMED EXPIRES_MS=10000\r\n");
-        break;
+        return append_log_format(record, capacity, used,
+                                 "MOTION_ARMED EXPIRES_MS=10000\r\n");
     case MOTION_EVENT_ARM_TIMEOUT:
-        try_send_motion_log(dropped_logs, "ARM_TIMEOUT\r\n");
-        break;
+        return append_log_format(record, capacity, used, "ARM_TIMEOUT\r\n");
     case MOTION_EVENT_START_REJECTED:
-        try_send_motion_log(dropped_logs, "START_REJECTED REASON=%s\r\n",
-                            reason != NULL ? reason : "UNKNOWN");
-        break;
+        return append_log_format(record, capacity, used,
+                                 "START_REJECTED REASON=%s\r\n",
+                                 reason != NULL ? reason : "UNKNOWN");
     case MOTION_EVENT_START_REQUESTED:
-        try_send_motion_log(
-            dropped_logs,
+        return append_log_format(
+            record, capacity, used,
             "MOTION_START_REQUESTED TARGET=+0.200rad/s\r\n");
-        break;
     case MOTION_EVENT_RUNNING:
-        try_send_motion_log(
-            dropped_logs,
+        return append_log_format(
+            record, capacity, used,
             "MOTION_RUNNING TARGET=+0.200rad/s DURATION_MS=1000\r\n");
-        break;
     case MOTION_EVENT_ZERO_HOLD:
-        try_send_motion_log(dropped_logs,
-                            "ZERO_SPEED_HOLD DURATION_MS=200\r\n");
-        break;
+        return append_log_format(record, capacity, used,
+                                 "ZERO_SPEED_HOLD DURATION_MS=200\r\n");
     case MOTION_EVENT_COMPLETE:
-        try_send_motion_log(dropped_logs,
-                            "TEST_COMPLETE MOTOR_DISABLED\r\n");
-        break;
+        return append_log_format(record, capacity, used,
+                                 "TEST_COMPLETE MOTOR_DISABLED\r\n");
     case MOTION_EVENT_EMERGENCY_STOP:
-        try_send_motion_log(dropped_logs, "EMERGENCY_STOP_REQUESTED\r\n");
-        break;
+        return append_log_format(record, capacity, used,
+                                 "EMERGENCY_STOP_REQUESTED\r\n");
     case MOTION_EVENT_SAFETY_TRIP:
-        try_send_motion_log(dropped_logs, "SAFETY_TRIP REASON=%s\r\n",
-                            reason != NULL ? reason : "UNKNOWN");
-        break;
+        return append_log_format(record, capacity, used,
+                                 "SAFETY_TRIP REASON=%s\r\n",
+                                 reason != NULL ? reason : "UNKNOWN");
     case MOTION_EVENT_TX_FAILURE:
-        try_send_motion_log(dropped_logs,
-                            "TX_FAILURE REASON=CAN_TX_FAILED\r\n");
-        break;
+        return append_log_format(record, capacity, used,
+                                 "TX_FAILURE REASON=CAN_TX_FAILED\r\n");
     case MOTION_EVENT_NONE:
     default:
-        break;
+        return true;
     }
 }
 
-static void log_successful_motion_action(MotionAction action,
-                                         uint32_t *dropped_logs)
+static bool append_successful_motion_action(char *record, size_t capacity,
+                                            size_t *used, MotionAction action)
 {
     switch (action) {
     case MOTION_ACTION_ENABLE:
-        try_send_motion_log(dropped_logs, "MOTOR_ENABLE_TX_OK\r\n");
-        break;
+        return append_log_format(record, capacity, used,
+                                 "MOTOR_ENABLE_TX_OK\r\n");
     case MOTION_ACTION_ZERO_VELOCITY:
-        try_send_motion_log(dropped_logs, "ZERO_SPEED_TX_OK\r\n");
-        break;
+        return append_log_format(record, capacity, used,
+                                 "ZERO_SPEED_TX_OK\r\n");
     case MOTION_ACTION_DISABLE:
-        try_send_motion_log(dropped_logs, "MOTOR_DISABLE_TX_OK\r\n");
-        break;
+        return append_log_format(record, capacity, used,
+                                 "MOTOR_DISABLE_TX_OK\r\n");
     case MOTION_ACTION_POSITIVE_VELOCITY:
     case MOTION_ACTION_NONE:
     default:
-        break;
+        return true;
     }
 }
 
@@ -464,43 +540,112 @@ static bool motion_event_follows_action(MotionEvent event)
            event == MOTION_EVENT_COMPLETE;
 }
 
+static void enqueue_motion_decision_log(MotionLogQueue *queue,
+                                        uint32_t *dropped_logs,
+                                        MotionDecision decision,
+                                        bool action_succeeded)
+{
+    char record[MOTION_LOG_RECORD_CAPACITY];
+    size_t used = 0u;
+    bool formatted = true;
+
+    if (!motion_event_follows_action(decision.event)) {
+        formatted = append_motion_event(record, sizeof(record), &used,
+                                        decision.event, decision.reason);
+    }
+    if (formatted && decision.action != MOTION_ACTION_NONE) {
+        if (action_succeeded) {
+            formatted = append_successful_motion_action(
+                record, sizeof(record), &used, decision.action);
+        } else {
+            formatted = append_log_format(
+                record, sizeof(record), &used,
+                "CAN_TX_FAILED ACTION=%s\r\n",
+                motion_action_name(decision.action));
+        }
+    }
+    if (formatted && action_succeeded &&
+        motion_event_follows_action(decision.event)) {
+        formatted = append_motion_event(record, sizeof(record), &used,
+                                        decision.event, decision.reason);
+    }
+    if (!formatted) {
+        (*dropped_logs)++;
+        return;
+    }
+    if (used != 0u) {
+        (void)enqueue_log_record(queue, dropped_logs, record, used);
+    }
+}
+
+static bool attempt_motion_decision(MotionDecision decision,
+                                    WheelStatus *wheel,
+                                    MotionLogQueue *queue,
+                                    uint32_t *dropped_logs)
+{
+    bool succeeded = decision.action == MOTION_ACTION_NONE ||
+                     execute_motion_action(decision.action, wheel);
+
+    enqueue_motion_decision_log(queue, dropped_logs, decision, succeeded);
+    return succeeded;
+}
+
+static void enqueue_motion_event_only(MotionDecision decision,
+                                      MotionLogQueue *queue,
+                                      uint32_t *dropped_logs)
+{
+    decision.action = MOTION_ACTION_NONE;
+    enqueue_motion_decision_log(queue, dropped_logs, decision, true);
+}
+
 static void execute_motion_decision(MotionController *controller,
                                     MotionDecision decision,
                                     WheelStatus *wheel,
+                                    MotionLogQueue *queue,
+                                    PendingMotionAction *pending,
                                     uint32_t *dropped_logs)
 {
     MotionDecision recovery;
+    MotionDecision retained;
 
-    if (!motion_event_follows_action(decision.event)) {
-        log_motion_event(decision.event, decision.reason, dropped_logs);
-    }
-    if (decision.action == MOTION_ACTION_NONE) {
-        return;
-    }
-    if (execute_motion_action(decision.action, wheel)) {
-        log_successful_motion_action(decision.action, dropped_logs);
-        if (motion_event_follows_action(decision.event)) {
-            log_motion_event(decision.event, decision.reason, dropped_logs);
-        }
+    if (attempt_motion_decision(decision, wheel, queue, dropped_logs)) {
         return;
     }
 
-    try_send_motion_log(dropped_logs, "CAN_TX_FAILED ACTION=%s\r\n",
-                        motion_action_name(decision.action));
     recovery = motion_controller_tx_failed(controller);
-    log_motion_event(recovery.event, recovery.reason, dropped_logs);
-    if (recovery.action == MOTION_ACTION_NONE) {
-        return;
-    }
-    if (execute_motion_action(recovery.action, wheel)) {
-        log_successful_motion_action(recovery.action, dropped_logs);
+    if (attempt_motion_decision(recovery, wheel, queue, dropped_logs)) {
         return;
     }
 
-    try_send_motion_log(dropped_logs, "CAN_TX_FAILED ACTION=%s\r\n",
-                        motion_action_name(recovery.action));
+    retained = motion_controller_tx_failed(controller);
+    enqueue_motion_event_only(retained, queue, dropped_logs);
+    pending_motion_action_failed(pending, recovery.action, retained.action);
+}
+
+static bool service_pending_motion_action(MotionController *controller,
+                                          WheelStatus *wheel,
+                                          MotionLogQueue *queue,
+                                          PendingMotionAction *pending,
+                                          uint32_t *dropped_logs)
+{
+    MotionDecision decision = {0};
+    MotionDecision recovery;
+    MotionAction attempted;
+
+    if (!pending_motion_action_has_value(pending)) {
+        return true;
+    }
+    attempted = pending_motion_action_begin_attempt(pending);
+    decision.action = attempted;
+    if (attempt_motion_decision(decision, wheel, queue, dropped_logs)) {
+        pending_motion_action_succeeded(pending);
+        return true;
+    }
+
     recovery = motion_controller_tx_failed(controller);
-    log_motion_event(recovery.event, recovery.reason, dropped_logs);
+    enqueue_motion_event_only(recovery, queue, dropped_logs);
+    pending_motion_action_failed(pending, attempted, recovery.action);
+    return false;
 }
 
 static bool motion_allows_parameter_polling(MotionState state)
@@ -515,9 +660,11 @@ static bool motion_uses_fast_wheel_log(MotionState state)
 
 int main(void)
 {
+    static MotionLogQueue log_queue;
     MotionController motion;
+    PendingMotionAction pending_motion_action;
     Phase1Monitor monitor;
-    bool boot_banner_sent = false;
+    bool boot_banner_queued = false;
     bool can1_ok;
     uint32_t next_diagnostic_ms = BOOT_LOG_DELAY_MS + DIAGNOSTIC_PERIOD_MS;
     uint32_t next_h6215_poll_ms = H6215_POLL_START_MS;
@@ -536,6 +683,8 @@ int main(void)
     MX_GPIO_Init();
     can1_ok = board_can1_init();
     motion_controller_init(&motion);
+    motion_log_queue_init(&log_queue);
+    pending_motion_action_init(&pending_motion_action);
     usb_command_queue_init();
     MX_USB_DEVICE_Init();
     phase1_monitor_init(&monitor);
@@ -544,6 +693,8 @@ int main(void)
         Can1Status can_status = {0};
         MotionSafetySnapshot safety;
         bool can_status_valid;
+        bool health_log_due = false;
+        bool wheel_log_due = false;
         uint32_t command_count;
         uint32_t now_ms = HAL_GetTick();
 
@@ -561,38 +712,53 @@ int main(void)
         safety = build_motion_safety_snapshot(&wheel, &can_status,
                                               can_status_valid, now_ms);
 
-        for (command_count = 0u; command_count < USB_COMMANDS_PER_LOOP;
-             command_count++) {
-            MotionDecision decision;
-            uint8_t command;
+        if (service_pending_motion_action(
+                &motion, &wheel, &log_queue, &pending_motion_action,
+                &dropped_logs)) {
+            for (command_count = 0u; command_count < USB_COMMANDS_PER_LOOP;
+                 command_count++) {
+                MotionDecision decision;
+                uint8_t command;
 
-            if (!usb_command_queue_pop(&command)) {
-                break;
+                if (!usb_command_queue_pop(&command)) {
+                    break;
+                }
+                decision = motion_controller_command(&motion, command, &safety);
+                if (decision.event == MOTION_EVENT_STATUS) {
+                    enqueue_status_report(
+                        &log_queue, &dropped_logs, &wheel, &monitor, can1_ok,
+                        &can_status, can_status_valid, now_ms);
+                } else {
+                    execute_motion_decision(
+                        &motion, decision, &wheel, &log_queue,
+                        &pending_motion_action, &dropped_logs);
+                }
+                if (pending_motion_action_has_value(&pending_motion_action)) {
+                    break;
+                }
             }
-            decision = motion_controller_command(&motion, command, &safety);
-            execute_motion_decision(&motion, decision, &wheel, &dropped_logs);
-            if (decision.event == MOTION_EVENT_STATUS) {
-                try_send_wheel_status(&wheel, now_ms, &dropped_logs);
-                try_send_diagnostics(&monitor, can1_ok, &can_status,
-                                     can_status_valid, now_ms, &dropped_logs);
+            if (!pending_motion_action_has_value(&pending_motion_action)) {
+                execute_motion_decision(
+                    &motion, motion_controller_step(&motion, &safety), &wheel,
+                    &log_queue, &pending_motion_action, &dropped_logs);
             }
         }
-        execute_motion_decision(&motion, motion_controller_step(&motion, &safety),
-                                &wheel, &dropped_logs);
 
-        if (can1_ok && motion_allows_parameter_polling(motion.state)) {
+        if (can1_ok && !pending_motion_action_has_value(&pending_motion_action) &&
+            motion_allows_parameter_polling(motion.state)) {
             poll_h6215(&wheel, &next_h6215_poll_ms, now_ms,
                        &h6215_register_index);
         } else {
             next_h6215_poll_ms = now_ms + H6215_POLL_PERIOD_MS;
         }
 
-        if (!boot_banner_sent && now_ms >= BOOT_LOG_DELAY_MS) {
-            try_send_boot_banner(can1_ok, &boot_banner_sent);
+        if (!boot_banner_queued && now_ms >= BOOT_LOG_DELAY_MS) {
+            boot_banner_queued = enqueue_boot_banner(
+                can1_ok, &log_queue, &dropped_logs);
         }
-        if (boot_banner_sent && (int32_t)(now_ms - next_diagnostic_ms) >= 0) {
-            try_send_diagnostics(&monitor, can1_ok, &can_status,
-                                 can_status_valid, now_ms, &dropped_logs);
+        if (boot_banner_queued &&
+            (int32_t)(now_ms - next_diagnostic_ms) >= 0) {
+            health_log_due = true;
             next_diagnostic_ms += DIAGNOSTIC_PERIOD_MS;
         }
         if (motion_uses_fast_wheel_log(motion.state) != fast_wheel_log) {
@@ -601,11 +767,19 @@ int main(void)
                 now_ms + (fast_wheel_log ? WHEEL_MOTION_LOG_PERIOD_MS
                                          : WHEEL_IDLE_LOG_PERIOD_MS);
         }
-        if (boot_banner_sent && (int32_t)(now_ms - next_wheel_log_ms) >= 0) {
-            try_send_wheel_status(&wheel, now_ms, &dropped_logs);
+        if (boot_banner_queued &&
+            (int32_t)(now_ms - next_wheel_log_ms) >= 0) {
+            wheel_log_due = true;
             next_wheel_log_ms += fast_wheel_log ? WHEEL_MOTION_LOG_PERIOD_MS
                                                 : WHEEL_IDLE_LOG_PERIOD_MS;
         }
+        if (wheel_log_due || health_log_due) {
+            enqueue_periodic_telemetry(
+                &log_queue, &dropped_logs, wheel_log_due, health_log_due,
+                &wheel, &monitor, can1_ok, &can_status, can_status_valid,
+                now_ms);
+        }
+        service_log_queue(&log_queue, &dropped_logs);
     }
 }
 
