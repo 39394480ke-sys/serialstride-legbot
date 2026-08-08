@@ -43,6 +43,16 @@ cc -std=c11 -Wall -Wextra -Werror \
 
 "$usb_queue_out"
 
+feedback_timing_out="${TMPDIR:-/tmp}/dm-mc02-feedback-timing-tests"
+
+cc -std=c11 -Wall -Wextra -Werror \
+  -I"$root/app" \
+  "$root/tests/test_feedback_timing.c" \
+  "$root/app/feedback_timing.c" \
+  -o "$feedback_timing_out"
+
+"$feedback_timing_out"
+
 motion_io_out="${TMPDIR:-/tmp}/dm-mc02-motion-io-tests"
 
 cc -std=c11 -Wall -Wextra -Werror \

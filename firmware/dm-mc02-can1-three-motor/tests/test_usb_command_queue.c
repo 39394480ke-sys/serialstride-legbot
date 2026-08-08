@@ -7,7 +7,7 @@
 
 static void test_preserves_fifo_order(void)
 {
-    static const uint8_t input[] = {'G', 'S', 'X'};
+    static const uint8_t input[] = {'G', 'S'};
     uint8_t command = 0u;
 
     usb_command_queue_init();
@@ -15,7 +15,6 @@ static void test_preserves_fifo_order(void)
 
     assert(usb_command_queue_pop(&command) && command == 'G');
     assert(usb_command_queue_pop(&command) && command == 'S');
-    assert(usb_command_queue_pop(&command) && command == 'X');
     assert(!usb_command_queue_pop(&command));
 }
 
@@ -101,6 +100,39 @@ static void test_full_queue_drops_newest_bytes_deterministically(void)
     }
 }
 
+static void test_emergency_stop_bypasses_full_queue_and_flushes_commands(void)
+{
+    uint8_t input[33];
+    uint8_t command = 0u;
+
+    usb_command_queue_init();
+    for (uint8_t index = 0u; index < 32u; ++index) {
+        input[index] = index == 0u ? (uint8_t)'A' : (uint8_t)'\n';
+    }
+    input[32] = (uint8_t)'X';
+    usb_command_queue_push_from_isr(input, sizeof(input));
+
+    assert(usb_command_queue_take_emergency_stop());
+    assert(!usb_command_queue_take_emergency_stop());
+    assert(!usb_command_queue_pop(&command));
+}
+
+static void test_emergency_stop_flushes_same_packet_motion_commands(void)
+{
+    static const uint8_t input[] = {'A', 'G', 'x', 'G'};
+    static const uint8_t after[] = {'S'};
+    uint8_t command = 0u;
+
+    usb_command_queue_init();
+    usb_command_queue_push_from_isr(input, sizeof(input));
+
+    assert(usb_command_queue_take_emergency_stop());
+    assert(!usb_command_queue_pop(&command));
+
+    usb_command_queue_push_from_isr(after, sizeof(after));
+    assert(usb_command_queue_pop(&command) && command == 'S');
+}
+
 int main(void)
 {
     test_preserves_fifo_order();
@@ -108,5 +140,7 @@ int main(void)
     test_wraparound_preserves_order();
     test_null_arguments_are_ignored();
     test_full_queue_drops_newest_bytes_deterministically();
+    test_emergency_stop_bypasses_full_queue_and_flushes_commands();
+    test_emergency_stop_flushes_same_packet_motion_commands();
     return 0;
 }

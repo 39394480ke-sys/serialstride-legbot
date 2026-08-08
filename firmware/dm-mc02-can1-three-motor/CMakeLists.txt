@@ -31,6 +31,7 @@ add_executable(${TARGET}
     app/motion_controller.c
     app/motion_io.c
     app/phase1_monitor.c
+    app/feedback_timing.c
     app/usb_command_queue.c
     platform/src/board.c
     platform/src/gpio.c

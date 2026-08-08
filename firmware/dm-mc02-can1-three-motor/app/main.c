@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "board.h"
+#include "feedback_timing.h"
 #include "gpio.h"
 #include "h6215_protocol.h"
 #include "main.h"
@@ -167,11 +168,14 @@ static void update_parameter(WheelStatus *wheel,
     }
 }
 
-static void receive_h6215_frames(WheelStatus *wheel, uint32_t now_ms)
+static void receive_h6215_frames(WheelStatus *wheel, uint32_t now_ms,
+                                 uint32_t loop_period_ms)
 {
     H6215CanFrame frame;
+    uint32_t frame_age_us;
 
-    while (board_can1_receive(&frame.id, frame.data, &frame.dlc)) {
+    while (board_can1_receive(&frame.id, frame.data, &frame.dlc,
+                              &frame_age_us)) {
         H6215ParameterResponse parameter;
         H6215Feedback feedback;
 
@@ -183,7 +187,8 @@ static void receive_h6215_frames(WheelStatus *wheel, uint32_t now_ms)
             wheel->feedback = feedback;
             wheel->feedback_valid = true;
             wheel->last_any_rx_ms = now_ms;
-            wheel->last_feedback_ms = now_ms;
+            wheel->last_feedback_ms = feedback_received_at_ms(
+                now_ms, frame_age_us, loop_period_ms);
             wheel->rx_count++;
         }
     }
@@ -699,8 +704,11 @@ int main(void)
         bool feedback_probe_due;
         bool health_log_due = false;
         bool wheel_log_due = false;
+        bool emergency_stop_requested;
         uint32_t command_count;
         uint32_t now_ms = HAL_GetTick();
+        uint32_t loop_period_ms =
+            monitor.started ? now_ms - monitor.last_tick_ms : 0u;
 
         if (!phase1_monitor_step(&monitor, now_ms)) {
             continue;
@@ -710,12 +718,23 @@ int main(void)
         if (can1_ok) {
             recover_can1_if_needed(&wheel, &next_can_recovery_check_ms, now_ms,
                                    &can_status, can_status_valid);
-            receive_h6215_frames(&wheel, now_ms);
+            receive_h6215_frames(&wheel, now_ms, loop_period_ms);
         }
         safety = build_motion_safety_snapshot(&wheel, &can_status,
                                               can_status_valid, now_ms);
 
-        if (service_pending_motion_action(
+        emergency_stop_requested = usb_command_queue_take_emergency_stop();
+        if (emergency_stop_requested) {
+            MotionDecision emergency_stop =
+                motion_controller_command(&motion, (uint8_t)'X', &safety);
+
+            pending_motion_action_init(&pending_motion_action);
+            execute_motion_decision(
+                &motion, emergency_stop, &wheel, &log_queue,
+                &pending_motion_action, &dropped_logs);
+        }
+
+        if (!emergency_stop_requested && service_pending_motion_action(
                 &motion, &wheel, &log_queue, &pending_motion_action,
                 &dropped_logs)) {
             for (command_count = 0u; command_count < USB_COMMANDS_PER_LOOP;

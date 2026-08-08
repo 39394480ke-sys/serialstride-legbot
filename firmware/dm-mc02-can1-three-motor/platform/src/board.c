@@ -113,6 +113,12 @@ bool board_can1_init(void)
                                      FDCAN_REJECT_REMOTE) != HAL_OK) {
         return false;
     }
+    if (HAL_FDCAN_ConfigTimestampCounter(&can1, FDCAN_TIMESTAMP_PRESC_16) !=
+            HAL_OK ||
+        HAL_FDCAN_EnableTimestampCounter(&can1, FDCAN_TIMESTAMP_INTERNAL) !=
+            HAL_OK) {
+        return false;
+    }
 
     return HAL_FDCAN_Start(&can1) == HAL_OK;
 }
@@ -172,11 +178,13 @@ bool board_can1_transmit(uint32_t standard_id, const uint8_t data[8], uint8_t dl
     return HAL_FDCAN_AddMessageToTxFifoQ(&can1, &header, data) == HAL_OK;
 }
 
-bool board_can1_receive(uint32_t *standard_id, uint8_t data[8], uint8_t *dlc)
+bool board_can1_receive(uint32_t *standard_id, uint8_t data[8], uint8_t *dlc,
+                        uint32_t *age_us)
 {
     FDCAN_RxHeaderTypeDef header = {0};
+    uint16_t timestamp_now;
 
-    if (standard_id == NULL || data == NULL || dlc == NULL ||
+    if (standard_id == NULL || data == NULL || dlc == NULL || age_us == NULL ||
         HAL_FDCAN_GetRxFifoFillLevel(&can1, FDCAN_RX_FIFO0) == 0u) {
         return false;
     }
@@ -188,5 +196,7 @@ bool board_can1_receive(uint32_t *standard_id, uint8_t data[8], uint8_t *dlc)
 
     *standard_id = header.Identifier;
     *dlc = (uint8_t)header.DataLength;
+    timestamp_now = HAL_FDCAN_GetTimestampCounter(&can1);
+    *age_us = (uint32_t)(uint16_t)(timestamp_now - header.RxTimestamp) * 16u;
     return true;
 }
