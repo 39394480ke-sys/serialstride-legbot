@@ -40,6 +40,9 @@ typedef struct {
 bool h6215_build_read_request(uint8_t register_id, H6215CanFrame *frame);
 bool h6215_build_feedback_request(H6215CanFrame *frame);
 bool h6215_build_disable_command(H6215CanFrame *frame);
+bool h6215_build_enable_command(H6215CanFrame *frame);
+bool h6215_build_positive_velocity_command(H6215CanFrame *frame);
+bool h6215_build_zero_velocity_command(H6215CanFrame *frame);
 bool h6215_parse_parameter_response(const H6215CanFrame *frame,
                                      H6215ParameterResponse *response);
 bool h6215_parse_feedback(const H6215CanFrame *frame, H6215Feedback *feedback);

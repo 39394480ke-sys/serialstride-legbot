@@ -51,6 +51,33 @@ static void test_builds_disable_probe(void)
     assert(frame.data[7] == 0xfdu);
 }
 
+static void test_builds_enable_command(void)
+{
+    H6215CanFrame frame = {0};
+
+    assert(h6215_build_enable_command(&frame));
+    assert(frame.id == 1u && frame.dlc == 8u);
+    for (uint8_t index = 0u; index < 7u; ++index) {
+        assert(frame.data[index] == 0xffu);
+    }
+    assert(frame.data[7] == 0xfcu);
+}
+
+static void test_builds_phase22a_velocity_commands(void)
+{
+    H6215CanFrame frame = {0};
+
+    assert(h6215_build_positive_velocity_command(&frame));
+    assert(frame.id == 0x201u && frame.dlc == 4u);
+    assert(frame.data[0] == 0xcdu && frame.data[1] == 0xccu);
+    assert(frame.data[2] == 0x4cu && frame.data[3] == 0x3eu);
+
+    assert(h6215_build_zero_velocity_command(&frame));
+    assert(frame.id == 0x201u && frame.dlc == 4u);
+    assert(frame.data[0] == 0u && frame.data[1] == 0u);
+    assert(frame.data[2] == 0u && frame.data[3] == 0u);
+}
+
 static void test_parses_parameter_response(void)
 {
     const H6215CanFrame frame = {
@@ -115,6 +142,8 @@ int main(void)
     test_builds_read_only_parameter_request();
     test_builds_read_only_feedback_request();
     test_builds_disable_probe();
+    test_builds_enable_command();
+    test_builds_phase22a_velocity_commands();
     test_parses_parameter_response();
     test_rejects_parameter_response_for_another_motor();
     test_decodes_ascii_software_version();
