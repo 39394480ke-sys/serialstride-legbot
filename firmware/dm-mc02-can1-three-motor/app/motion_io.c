@@ -60,6 +60,33 @@ void motion_log_queue_finish_attempt(MotionLogQueue *queue, bool accepted,
     }
 }
 
+uint32_t motion_telemetry_period_ms(MotionState state)
+{
+    return state == MOTION_IDLE_DISABLED || state == MOTION_ARMED
+               ? MOTION_TELEMETRY_IDLE_PERIOD_MS
+               : MOTION_TELEMETRY_ACTIVE_PERIOD_MS;
+}
+
+bool motion_telemetry_reschedule(MotionState state, uint32_t now_ms,
+                                 uint32_t *period_ms,
+                                 uint32_t *next_health_ms,
+                                 uint32_t *next_wheel_ms)
+{
+    uint32_t next_period_ms;
+
+    if (period_ms == NULL || next_health_ms == NULL || next_wheel_ms == NULL) {
+        return false;
+    }
+    next_period_ms = motion_telemetry_period_ms(state);
+    if (*period_ms == next_period_ms) {
+        return false;
+    }
+    *period_ms = next_period_ms;
+    *next_health_ms = now_ms + next_period_ms;
+    *next_wheel_ms = now_ms + next_period_ms;
+    return true;
+}
+
 void pending_motion_action_init(PendingMotionAction *pending)
 {
     if (pending != NULL) {

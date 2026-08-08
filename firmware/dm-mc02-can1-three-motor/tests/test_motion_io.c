@@ -150,6 +150,51 @@ static void test_disable_returned_after_recovery_failure_stays_pending(void)
            MOTION_ACTION_DISABLE);
 }
 
+static void test_telemetry_cadence_matches_motion_activity(void)
+{
+    static const MotionState active_states[] = {
+        MOTION_ENABLE_WAIT,
+        MOTION_RUNNING,
+        MOTION_ZERO_HOLD,
+        MOTION_FAULT_ZERO,
+        MOTION_FAULT_DISABLE,
+    };
+
+    assert(motion_telemetry_period_ms(MOTION_IDLE_DISABLED) == 1000u);
+    assert(motion_telemetry_period_ms(MOTION_ARMED) == 1000u);
+    for (size_t index = 0u;
+         index < sizeof(active_states) / sizeof(active_states[0]); ++index) {
+        assert(motion_telemetry_period_ms(active_states[index]) == 100u);
+    }
+}
+
+static void test_telemetry_cadence_transition_reschedules_both_timers(void)
+{
+    uint32_t period_ms = 1000u;
+    uint32_t next_health_ms = 700u;
+    uint32_t next_wheel_ms = 800u;
+
+    assert(!motion_telemetry_reschedule(MOTION_ARMED, 100u, &period_ms,
+                                        &next_health_ms, &next_wheel_ms));
+    assert(period_ms == 1000u);
+    assert(next_health_ms == 700u && next_wheel_ms == 800u);
+
+    assert(motion_telemetry_reschedule(MOTION_ENABLE_WAIT, 200u, &period_ms,
+                                       &next_health_ms, &next_wheel_ms));
+    assert(period_ms == 100u);
+    assert(next_health_ms == 300u && next_wheel_ms == 300u);
+
+    assert(!motion_telemetry_reschedule(MOTION_FAULT_DISABLE, 250u,
+                                        &period_ms, &next_health_ms,
+                                        &next_wheel_ms));
+    assert(next_health_ms == 300u && next_wheel_ms == 300u);
+
+    assert(motion_telemetry_reschedule(MOTION_ARMED, 300u, &period_ms,
+                                       &next_health_ms, &next_wheel_ms));
+    assert(period_ms == 1000u);
+    assert(next_health_ms == 1300u && next_wheel_ms == 1300u);
+}
+
 int main(void)
 {
     test_log_queue_preserves_composed_records_in_fifo_order();
@@ -159,5 +204,7 @@ int main(void)
     test_pending_action_remains_owned_until_success();
     test_failed_action_without_replacement_is_retried();
     test_disable_returned_after_recovery_failure_stays_pending();
+    test_telemetry_cadence_matches_motion_activity();
+    test_telemetry_cadence_transition_reschedules_both_timers();
     return 0;
 }

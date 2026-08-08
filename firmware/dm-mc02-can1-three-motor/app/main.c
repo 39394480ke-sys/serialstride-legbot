@@ -15,11 +15,8 @@
 #include "usbd_cdc_if.h"
 
 #define BOOT_LOG_DELAY_MS 1500u
-#define DIAGNOSTIC_PERIOD_MS 100u
 #define H6215_POLL_START_MS 2000u
 #define H6215_POLL_PERIOD_MS 200u
-#define WHEEL_IDLE_LOG_PERIOD_MS 1000u
-#define WHEEL_MOTION_LOG_PERIOD_MS 100u
 #define H6215_ONLINE_TIMEOUT_MS 1000u
 #define USB_COMMANDS_PER_LOOP 32u
 
@@ -653,11 +650,6 @@ static bool motion_allows_parameter_polling(MotionState state)
     return state == MOTION_IDLE_DISABLED || state == MOTION_ARMED;
 }
 
-static bool motion_uses_fast_wheel_log(MotionState state)
-{
-    return state != MOTION_IDLE_DISABLED;
-}
-
 int main(void)
 {
     static MotionLogQueue log_queue;
@@ -666,14 +658,15 @@ int main(void)
     Phase1Monitor monitor;
     bool boot_banner_queued = false;
     bool can1_ok;
-    uint32_t next_diagnostic_ms = BOOT_LOG_DELAY_MS + DIAGNOSTIC_PERIOD_MS;
+    uint32_t telemetry_period_ms = MOTION_TELEMETRY_IDLE_PERIOD_MS;
+    uint32_t next_diagnostic_ms =
+        BOOT_LOG_DELAY_MS + MOTION_TELEMETRY_IDLE_PERIOD_MS;
     uint32_t next_h6215_poll_ms = H6215_POLL_START_MS;
     uint32_t next_wheel_log_ms =
-        H6215_POLL_START_MS + WHEEL_IDLE_LOG_PERIOD_MS + 50u;
+        H6215_POLL_START_MS + MOTION_TELEMETRY_IDLE_PERIOD_MS + 50u;
     uint32_t next_can_recovery_check_ms = H6215_POLL_START_MS;
     uint32_t dropped_logs = 0u;
     size_t h6215_register_index = 0u;
-    bool fast_wheel_log = false;
     WheelStatus wheel = {0};
 
     SCB_EnableICache();
@@ -756,22 +749,18 @@ int main(void)
             boot_banner_queued = enqueue_boot_banner(
                 can1_ok, &log_queue, &dropped_logs);
         }
+        (void)motion_telemetry_reschedule(
+            motion.state, now_ms, &telemetry_period_ms, &next_diagnostic_ms,
+            &next_wheel_log_ms);
         if (boot_banner_queued &&
             (int32_t)(now_ms - next_diagnostic_ms) >= 0) {
             health_log_due = true;
-            next_diagnostic_ms += DIAGNOSTIC_PERIOD_MS;
-        }
-        if (motion_uses_fast_wheel_log(motion.state) != fast_wheel_log) {
-            fast_wheel_log = motion_uses_fast_wheel_log(motion.state);
-            next_wheel_log_ms =
-                now_ms + (fast_wheel_log ? WHEEL_MOTION_LOG_PERIOD_MS
-                                         : WHEEL_IDLE_LOG_PERIOD_MS);
+            next_diagnostic_ms += telemetry_period_ms;
         }
         if (boot_banner_queued &&
             (int32_t)(now_ms - next_wheel_log_ms) >= 0) {
             wheel_log_due = true;
-            next_wheel_log_ms += fast_wheel_log ? WHEEL_MOTION_LOG_PERIOD_MS
-                                                : WHEEL_IDLE_LOG_PERIOD_MS;
+            next_wheel_log_ms += telemetry_period_ms;
         }
         if (wheel_log_due || health_log_due) {
             enqueue_periodic_telemetry(
