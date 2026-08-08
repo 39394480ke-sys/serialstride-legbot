@@ -12,8 +12,8 @@ static volatile uint32_t dropped_count;
 
 void usb_command_queue_init(void)
 {
-    read_index = 0u;
-    write_index = 0u;
+    __atomic_store_n(&read_index, 0u, __ATOMIC_RELAXED);
+    __atomic_store_n(&write_index, 0u, __ATOMIC_RELAXED);
     dropped_count = 0u;
 }
 
@@ -26,15 +26,17 @@ void usb_command_queue_push_from_isr(const uint8_t *data, uint32_t length)
     }
 
     for (index = 0u; index < length; ++index) {
-        uint8_t write = write_index;
+        uint8_t write = __atomic_load_n(&write_index, __ATOMIC_RELAXED);
+        uint8_t read = __atomic_load_n(&read_index, __ATOMIC_ACQUIRE);
 
-        if ((uint8_t)(write - read_index) >= USB_COMMAND_QUEUE_CAPACITY) {
+        if ((uint8_t)(write - read) >= USB_COMMAND_QUEUE_CAPACITY) {
             ++dropped_count;
             continue;
         }
 
         queue[write & USB_COMMAND_QUEUE_MASK] = data[index];
-        write_index = (uint8_t)(write + 1u);
+        __atomic_store_n(&write_index, (uint8_t)(write + 1u),
+                         __ATOMIC_RELEASE);
     }
 }
 
@@ -46,13 +48,13 @@ bool usb_command_queue_pop(uint8_t *command)
         return false;
     }
 
-    read = read_index;
-    if (read == write_index) {
+    read = __atomic_load_n(&read_index, __ATOMIC_RELAXED);
+    if (read == __atomic_load_n(&write_index, __ATOMIC_ACQUIRE)) {
         return false;
     }
 
     *command = queue[read & USB_COMMAND_QUEUE_MASK];
-    read_index = (uint8_t)(read + 1u);
+    __atomic_store_n(&read_index, (uint8_t)(read + 1u), __ATOMIC_RELEASE);
     return true;
 }
 
