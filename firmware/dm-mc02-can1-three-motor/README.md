@@ -30,17 +30,18 @@ DEFAULT_STATE=DISABLED AUTO_MOTION=OFF
 
 - polls software version, control mode, `P_MAX`, `V_MAX`, and `T_MAX` using
   the read-register opcode only;
-- waits until all five parameters are valid, then sends exactly one explicit
-  Disable command to request a feedback frame while enforcing zero output;
+- sends an explicit Disable feedback probe every 200 ms only while the guarded
+  controller is idle-disabled or armed and no recovery action is pending;
 - parses state, position, velocity, torque, MOS temperature, and rotor
   temperature;
-- keeps the Phase 2.1 probe path limited to reads and its one-shot Disable;
+- keeps the probe path limited to parameter reads and the feedback-producing
+  Disable command, with no catch-up probes after motion or fault states;
 - marks the wheel offline when no valid response is received for one second.
 
 Expected hardware status after the safe probe:
 
 ```text
-[WHEEL] ONLINE=1 ID=1 MST_ID=0 STATE=DISABLED SW=5406 MODE=3
+[WHEEL] ONLINE=1 ID=1 MST_ID=0 STATE=DISABLED FB_AGE_MS=1 SW=5406 MODE=3
 P_MAX=12.500 V_MAX=45.000 T_MAX=10.000 PARAM_MASK=0x1F
 ```
 
@@ -59,7 +60,9 @@ speed for 200 ms, and then sends Disable. Enable, positive velocity, zero
 velocity, and Disable are the only motion-path CAN actions. Parameter polling
 pauses while motion or fault shutdown is active so it cannot contend with the
 10 ms control frames. A CAN transmit failure enters the controller's zero and
-Disable recovery path. `G` without a fresh `A` is rejected.
+Disable recovery path. An idle feedback-probe transmit failure is counted but
+does not enter that motion-fault path; a later `G` still requires fresh
+feedback and active CAN. `G` without a fresh `A` is rejected.
 
 ## Build and test
 

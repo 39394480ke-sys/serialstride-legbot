@@ -214,12 +214,12 @@ static void poll_h6215(WheelStatus *wheel, uint32_t *next_poll_ms,
     *register_index = (*register_index + 1u) % register_count;
 }
 
-static void send_disable_probe_once(WheelStatus *wheel)
+static void send_disable_feedback_probe(WheelStatus *wheel)
 {
     H6215CanFrame command;
 
-    if (wheel->disable_probe_sent || wheel->parameter_mask != 0x1fu ||
-        !h6215_build_disable_command(&command)) {
+    if (!h6215_build_disable_command(&command)) {
+        wheel->tx_failed++;
         return;
     }
     if (board_can1_transmit(command.id, command.data, command.dlc)) {
@@ -255,6 +255,7 @@ static int format_wheel_status(char *buffer, size_t capacity,
     char position[16];
     char velocity[16];
     char torque[16];
+    char feedback_age[16];
     bool online = wheel->last_any_rx_ms != 0u &&
                   (uint32_t)(now_ms - wheel->last_any_rx_ms) <=
                       H6215_ONLINE_TIMEOUT_MS;
@@ -268,14 +269,21 @@ static int format_wheel_status(char *buffer, size_t capacity,
                  wheel->feedback.velocity_millirad_s);
     format_milli(torque, sizeof(torque),
                  wheel->feedback.torque_millinewton_m);
+    if (wheel->feedback_valid) {
+        snprintf(feedback_age, sizeof(feedback_age), "%lu",
+                 (unsigned long)(now_ms - wheel->last_feedback_ms));
+    } else {
+        snprintf(feedback_age, sizeof(feedback_age), "NA");
+    }
     length = snprintf(
         buffer, capacity,
-        "[WHEEL] ONLINE=%u ID=1 MST_ID=0 STATE=%s SW=%s MODE=%u "
+        "[WHEEL] ONLINE=%u ID=1 MST_ID=0 STATE=%s FB_AGE_MS=%s SW=%s MODE=%u "
         "P_MAX=%s V_MAX=%s T_MAX=%s PARAM_MASK=0x%02X RX=%lu "
         "P=%s V=%s T=%s TMOS=%u TROTOR=%u DISABLE_PROBE=%u "
         "TX_OK=%lu TX_FAIL=%lu CAN_RECOVERIES=%lu\r\n",
         online, wheel->feedback_valid ? h6215_state_name(wheel->feedback.state)
                                       : "NO_FEEDBACK",
+        feedback_age,
         wheel->software_version[0] != '\0' ? wheel->software_version : "UNKNOWN",
         wheel->control_mode, p_max,
         v_max, t_max, wheel->parameter_mask, (unsigned long)wheel->rx_count,
@@ -655,6 +663,7 @@ int main(void)
     static MotionLogQueue log_queue;
     MotionController motion;
     PendingMotionAction pending_motion_action;
+    MotionFeedbackProbeSchedule feedback_probe_schedule;
     Phase1Monitor monitor;
     bool boot_banner_queued = false;
     bool can1_ok;
@@ -678,6 +687,7 @@ int main(void)
     motion_controller_init(&motion);
     motion_log_queue_init(&log_queue);
     pending_motion_action_init(&pending_motion_action);
+    motion_feedback_probe_schedule_init(&feedback_probe_schedule);
     usb_command_queue_init();
     MX_USB_DEVICE_Init();
     phase1_monitor_init(&monitor);
@@ -686,6 +696,7 @@ int main(void)
         Can1Status can_status = {0};
         MotionSafetySnapshot safety;
         bool can_status_valid;
+        bool feedback_probe_due;
         bool health_log_due = false;
         bool wheel_log_due = false;
         uint32_t command_count;
@@ -700,7 +711,6 @@ int main(void)
             recover_can1_if_needed(&wheel, &next_can_recovery_check_ms, now_ms,
                                    &can_status, can_status_valid);
             receive_h6215_frames(&wheel, now_ms);
-            send_disable_probe_once(&wheel);
         }
         safety = build_motion_safety_snapshot(&wheel, &can_status,
                                               can_status_valid, now_ms);
@@ -735,6 +745,13 @@ int main(void)
                     &motion, motion_controller_step(&motion, &safety), &wheel,
                     &log_queue, &pending_motion_action, &dropped_logs);
             }
+        }
+
+        feedback_probe_due = motion_feedback_probe_should_send(
+            &feedback_probe_schedule, motion.state,
+            pending_motion_action_has_value(&pending_motion_action), now_ms);
+        if (can1_ok && feedback_probe_due) {
+            send_disable_feedback_probe(&wheel);
         }
 
         if (can1_ok && !pending_motion_action_has_value(&pending_motion_action) &&

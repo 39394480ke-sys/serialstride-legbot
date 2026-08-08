@@ -87,6 +87,44 @@ bool motion_telemetry_reschedule(MotionState state, uint32_t now_ms,
     return true;
 }
 
+void motion_feedback_probe_schedule_init(
+    MotionFeedbackProbeSchedule *schedule)
+{
+    if (schedule != NULL) {
+        memset(schedule, 0, sizeof(*schedule));
+    }
+}
+
+bool motion_feedback_probe_should_send(
+    MotionFeedbackProbeSchedule *schedule, MotionState state,
+    bool pending_action, uint32_t now_ms)
+{
+    bool allowed;
+
+    if (schedule == NULL) {
+        return false;
+    }
+
+    allowed = !pending_action &&
+              (state == MOTION_IDLE_DISABLED || state == MOTION_ARMED);
+    if (!allowed) {
+        schedule->window_open = false;
+        schedule->next_probe_ms = now_ms + MOTION_FEEDBACK_PROBE_PERIOD_MS;
+        return false;
+    }
+    if (!schedule->window_open) {
+        schedule->window_open = true;
+        schedule->next_probe_ms = now_ms + MOTION_FEEDBACK_PROBE_PERIOD_MS;
+        return false;
+    }
+    if ((int32_t)(now_ms - schedule->next_probe_ms) < 0) {
+        return false;
+    }
+
+    schedule->next_probe_ms = now_ms + MOTION_FEEDBACK_PROBE_PERIOD_MS;
+    return true;
+}
+
 void pending_motion_action_init(PendingMotionAction *pending)
 {
     if (pending != NULL) {

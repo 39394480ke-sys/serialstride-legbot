@@ -195,6 +195,102 @@ static void test_telemetry_cadence_transition_reschedules_both_timers(void)
     assert(next_health_ms == 1300u && next_wheel_ms == 1300u);
 }
 
+static void test_feedback_probe_runs_on_200_ms_idle_armed_cadence(void)
+{
+    MotionFeedbackProbeSchedule schedule;
+
+    motion_feedback_probe_schedule_init(&schedule);
+    assert(!motion_feedback_probe_should_send(
+        &schedule, MOTION_IDLE_DISABLED, false, 100u));
+    assert(!motion_feedback_probe_should_send(
+        &schedule, MOTION_ARMED, false, 299u));
+    assert(motion_feedback_probe_should_send(
+        &schedule, MOTION_ARMED, false, 300u));
+    assert(!motion_feedback_probe_should_send(
+        &schedule, MOTION_IDLE_DISABLED, false, 300u));
+    assert(!motion_feedback_probe_should_send(
+        &schedule, MOTION_IDLE_DISABLED, false, 499u));
+    assert(motion_feedback_probe_should_send(
+        &schedule, MOTION_IDLE_DISABLED, false, 500u));
+}
+
+static void test_feedback_probe_never_runs_in_active_or_fault_states(void)
+{
+    static const MotionState prohibited_states[] = {
+        MOTION_ENABLE_WAIT,
+        MOTION_RUNNING,
+        MOTION_ZERO_HOLD,
+        MOTION_FAULT_ZERO,
+        MOTION_FAULT_DISABLE,
+    };
+
+    for (size_t index = 0u;
+         index < sizeof(prohibited_states) / sizeof(prohibited_states[0]);
+         ++index) {
+        MotionFeedbackProbeSchedule schedule;
+
+        motion_feedback_probe_schedule_init(&schedule);
+        assert(!motion_feedback_probe_should_send(
+            &schedule, prohibited_states[index], false, 0u));
+        assert(!motion_feedback_probe_should_send(
+            &schedule, prohibited_states[index], false, 200u));
+    }
+}
+
+static void test_pending_action_suppresses_and_reschedules_feedback_probe(void)
+{
+    MotionFeedbackProbeSchedule schedule;
+
+    motion_feedback_probe_schedule_init(&schedule);
+    assert(!motion_feedback_probe_should_send(
+        &schedule, MOTION_IDLE_DISABLED, false, 0u));
+    assert(!motion_feedback_probe_should_send(
+        &schedule, MOTION_IDLE_DISABLED, true, 200u));
+    assert(!motion_feedback_probe_should_send(
+        &schedule, MOTION_IDLE_DISABLED, false, 200u));
+    assert(!motion_feedback_probe_should_send(
+        &schedule, MOTION_IDLE_DISABLED, false, 399u));
+    assert(motion_feedback_probe_should_send(
+        &schedule, MOTION_IDLE_DISABLED, false, 400u));
+}
+
+static void test_post_command_active_state_suppresses_same_tick_probe(void)
+{
+    MotionFeedbackProbeSchedule schedule;
+
+    motion_feedback_probe_schedule_init(&schedule);
+    assert(!motion_feedback_probe_should_send(
+        &schedule, MOTION_ARMED, false, 0u));
+    assert(!motion_feedback_probe_should_send(
+        &schedule, MOTION_ENABLE_WAIT, false, 200u));
+    assert(!motion_feedback_probe_should_send(
+        &schedule, MOTION_RUNNING, false, 400u));
+    assert(!motion_feedback_probe_should_send(
+        &schedule, MOTION_ZERO_HOLD, false, 1200u));
+    assert(!motion_feedback_probe_should_send(
+        &schedule, MOTION_IDLE_DISABLED, false, 1400u));
+    assert(!motion_feedback_probe_should_send(
+        &schedule, MOTION_IDLE_DISABLED, false, 1599u));
+    assert(motion_feedback_probe_should_send(
+        &schedule, MOTION_IDLE_DISABLED, false, 1600u));
+}
+
+static void test_feedback_probe_deadline_handles_tick_wraparound(void)
+{
+    MotionFeedbackProbeSchedule schedule;
+    const uint32_t start_ms = UINT32_MAX - 99u;
+
+    motion_feedback_probe_schedule_init(&schedule);
+    assert(!motion_feedback_probe_should_send(
+        &schedule, MOTION_IDLE_DISABLED, false, start_ms));
+    assert(!motion_feedback_probe_should_send(
+        &schedule, MOTION_IDLE_DISABLED, false, 99u));
+    assert(motion_feedback_probe_should_send(
+        &schedule, MOTION_IDLE_DISABLED, false, 100u));
+    assert(!motion_feedback_probe_should_send(
+        &schedule, MOTION_IDLE_DISABLED, false, 100u));
+}
+
 int main(void)
 {
     test_log_queue_preserves_composed_records_in_fifo_order();
@@ -206,5 +302,10 @@ int main(void)
     test_disable_returned_after_recovery_failure_stays_pending();
     test_telemetry_cadence_matches_motion_activity();
     test_telemetry_cadence_transition_reschedules_both_timers();
+    test_feedback_probe_runs_on_200_ms_idle_armed_cadence();
+    test_feedback_probe_never_runs_in_active_or_fault_states();
+    test_pending_action_suppresses_and_reschedules_feedback_probe();
+    test_post_command_active_state_suppresses_same_tick_probe();
+    test_feedback_probe_deadline_handles_tick_wraparound();
     return 0;
 }

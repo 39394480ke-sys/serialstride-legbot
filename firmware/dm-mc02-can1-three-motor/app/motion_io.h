@@ -11,6 +11,7 @@
 #define MOTION_LOG_RECORD_CAPACITY 640u
 #define MOTION_TELEMETRY_IDLE_PERIOD_MS 1000u
 #define MOTION_TELEMETRY_ACTIVE_PERIOD_MS 100u
+#define MOTION_FEEDBACK_PROBE_PERIOD_MS 200u
 
 typedef struct {
     uint8_t records[MOTION_LOG_QUEUE_CAPACITY][MOTION_LOG_RECORD_CAPACITY];
@@ -23,6 +24,11 @@ typedef struct {
 typedef struct {
     MotionAction action;
 } PendingMotionAction;
+
+typedef struct {
+    uint32_t next_probe_ms;
+    bool window_open;
+} MotionFeedbackProbeSchedule;
 
 void motion_log_queue_init(MotionLogQueue *queue);
 bool motion_log_queue_push(MotionLogQueue *queue, const void *record,
@@ -37,6 +43,11 @@ bool motion_telemetry_reschedule(MotionState state, uint32_t now_ms,
                                  uint32_t *period_ms,
                                  uint32_t *next_health_ms,
                                  uint32_t *next_wheel_ms);
+void motion_feedback_probe_schedule_init(
+    MotionFeedbackProbeSchedule *schedule);
+bool motion_feedback_probe_should_send(
+    MotionFeedbackProbeSchedule *schedule, MotionState state,
+    bool pending_action, uint32_t now_ms);
 
 void pending_motion_action_init(PendingMotionAction *pending);
 bool pending_motion_action_has_value(const PendingMotionAction *pending);
