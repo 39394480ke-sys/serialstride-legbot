@@ -22,3 +22,13 @@ cc -std=c11 -Wall -Wextra -Werror \
   -o "$protocol_out"
 
 "$protocol_out"
+
+motion_out="${TMPDIR:-/tmp}/dm-mc02-motion-controller-tests"
+
+cc -std=c11 -Wall -Wextra -Werror \
+  -I"$root/app" \
+  "$root/tests/test_motion_controller.c" \
+  "$root/app/motion_controller.c" \
+  -o "$motion_out"
+
+"$motion_out"
