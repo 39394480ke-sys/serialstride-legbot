@@ -48,6 +48,18 @@ void motion_log_queue_pop(MotionLogQueue *queue)
     queue->count--;
 }
 
+void motion_log_queue_finish_attempt(MotionLogQueue *queue, bool accepted,
+                                     uint32_t *dropped_logs)
+{
+    if (queue == NULL || dropped_logs == NULL || queue->count == 0u) {
+        return;
+    }
+    motion_log_queue_pop(queue);
+    if (!accepted) {
+        (*dropped_logs)++;
+    }
+}
+
 void pending_motion_action_init(PendingMotionAction *pending)
 {
     if (pending != NULL) {

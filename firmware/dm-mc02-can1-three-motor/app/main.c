@@ -85,18 +85,18 @@ static void service_log_queue(MotionLogQueue *queue, uint32_t *dropped_logs)
     const uint8_t *record;
     uint16_t length;
     uint8_t result;
+    bool accepted;
 
     if (!motion_log_queue_peek(queue, &record, &length)) {
         return;
     }
     memcpy(tx_buffers[tx_buffer_index], record, length);
     result = CDC_Transmit_HS(tx_buffers[tx_buffer_index], length);
-    if (result != USBD_OK) {
-        (*dropped_logs)++;
-        return;
+    accepted = result == USBD_OK;
+    motion_log_queue_finish_attempt(queue, accepted, dropped_logs);
+    if (accepted) {
+        tx_buffer_index ^= 1u;
     }
-    motion_log_queue_pop(queue);
-    tx_buffer_index ^= 1u;
 }
 
 static bool enqueue_boot_banner(bool can1_ok, MotionLogQueue *queue,

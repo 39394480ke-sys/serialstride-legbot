@@ -65,6 +65,33 @@ static void test_log_queue_rejects_invalid_records(void)
     assert(!motion_log_queue_push(&queue, oversized, sizeof(oversized)));
 }
 
+static void test_submission_attempt_always_removes_head_and_counts_rejection(void)
+{
+    static const char first[] = "first";
+    static const char second[] = "second";
+    MotionLogQueue queue;
+    const uint8_t *record;
+    uint16_t length;
+    uint32_t dropped_logs = 4u;
+
+    motion_log_queue_init(&queue);
+    assert(motion_log_queue_push(&queue, first, sizeof(first) - 1u));
+    assert(motion_log_queue_push(&queue, second, sizeof(second) - 1u));
+
+    motion_log_queue_finish_attempt(&queue, false, &dropped_logs);
+    assert(dropped_logs == 5u);
+    assert(motion_log_queue_peek(&queue, &record, &length));
+    assert(length == sizeof(second) - 1u);
+    assert(memcmp(record, second, length) == 0);
+
+    motion_log_queue_finish_attempt(&queue, true, &dropped_logs);
+    assert(dropped_logs == 5u);
+    assert(!motion_log_queue_peek(&queue, &record, &length));
+
+    motion_log_queue_finish_attempt(&queue, false, &dropped_logs);
+    assert(dropped_logs == 5u);
+}
+
 static void test_pending_action_remains_owned_until_success(void)
 {
     PendingMotionAction pending;
@@ -128,6 +155,7 @@ int main(void)
     test_log_queue_preserves_composed_records_in_fifo_order();
     test_log_queue_rejects_overflow_without_corrupting_oldest();
     test_log_queue_rejects_invalid_records();
+    test_submission_attempt_always_removes_head_and_counts_rejection();
     test_pending_action_remains_owned_until_success();
     test_failed_action_without_replacement_is_retried();
     test_disable_returned_after_recovery_failure_stays_pending();

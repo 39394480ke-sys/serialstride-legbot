@@ -28,6 +28,8 @@ bool motion_log_queue_push(MotionLogQueue *queue, const void *record,
 bool motion_log_queue_peek(const MotionLogQueue *queue,
                            const uint8_t **record, uint16_t *length);
 void motion_log_queue_pop(MotionLogQueue *queue);
+void motion_log_queue_finish_attempt(MotionLogQueue *queue, bool accepted,
+                                     uint32_t *dropped_logs);
 
 void pending_motion_action_init(PendingMotionAction *pending);
 bool pending_motion_action_has_value(const PendingMotionAction *pending);
