@@ -149,7 +149,7 @@ bool board_can1_transmit(uint32_t standard_id, const uint8_t data[8], uint8_t dl
 {
     FDCAN_TxHeaderTypeDef header = {0};
 
-    if (data == NULL || standard_id > 0x7ffu || dlc != 8u ||
+    if (data == NULL || standard_id > 0x7ffu ||
         HAL_FDCAN_GetTxFifoFreeLevel(&can1) == 0u) {
         return false;
     }
@@ -157,7 +157,13 @@ bool board_can1_transmit(uint32_t standard_id, const uint8_t data[8], uint8_t dl
     header.Identifier = standard_id;
     header.IdType = FDCAN_STANDARD_ID;
     header.TxFrameType = FDCAN_DATA_FRAME;
-    header.DataLength = FDCAN_DLC_BYTES_8;
+    if (dlc == 4u) {
+        header.DataLength = FDCAN_DLC_BYTES_4;
+    } else if (dlc == 8u) {
+        header.DataLength = FDCAN_DLC_BYTES_8;
+    } else {
+        return false;
+    }
     header.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
     header.BitRateSwitch = FDCAN_BRS_OFF;
     header.FDFormat = FDCAN_CLASSIC_CAN;

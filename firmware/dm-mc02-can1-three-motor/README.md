@@ -2,8 +2,9 @@
 
 This directory is the firmware base for the single-side three-motor CAN1
 network. It contains the completed DM-MC02 Phase 1 bring-up and the Phase 2.1
-H6215 parameter/feedback probe. It does not contain enable, velocity, torque,
-or other motion commands.
+H6215 parameter/feedback probe, plus the Phase 2.2a guarded positive-velocity
+test. Motion is off by default and is available only through the explicit
+`A`, then `G`, serial command sequence.
 
 ## Phase 1 behavior
 
@@ -20,9 +21,9 @@ Expected boot markers:
 MC02_BOOT
 CLOCK_OK SYSCLK=480000000 HCLK=240000000
 TIMER_OK TICK_HZ=1000
-CAN1_INIT_OK BITRATE=1000000 TX=READ_AND_DISABLE_ONLY
-H6215_SAFE_PROBE CAN_ID=1 MST_ID=0 ENABLE=ABSENT MOTION=ABSENT DISABLE=ONCE
-MAIN_LOOP_RUNNING DEFAULT_STATE=DISABLED
+CAN1_INIT_OK BITRATE=1000000 TX=GUARDED_MOTION
+H6215_GUARDED_MOTION COMMANDS=S,A,G,X TARGET=+0.200rad/s
+DEFAULT_STATE=DISABLED AUTO_MOTION=OFF
 ```
 
 ## Phase 2.1 behavior
@@ -33,7 +34,7 @@ MAIN_LOOP_RUNNING DEFAULT_STATE=DISABLED
   Disable command to request a feedback frame while enforcing zero output;
 - parses state, position, velocity, torque, MOS temperature, and rotor
   temperature;
-- never implements or sends Enable, velocity, torque, or position commands;
+- keeps the Phase 2.1 probe path limited to reads and its one-shot Disable;
 - marks the wheel offline when no valid response is received for one second.
 
 Expected hardware status after the safe probe:
@@ -42,6 +43,23 @@ Expected hardware status after the safe probe:
 [WHEEL] ONLINE=1 ID=1 MST_ID=0 STATE=DISABLED SW=5406 MODE=3
 P_MAX=12.500 V_MAX=45.000 T_MAX=10.000 PARAM_MASK=0x1F
 ```
+
+## Phase 2.2a guarded motion test
+
+The firmware accepts one ASCII command character at a time over USB CDC:
+
+- `S` requests the current wheel and health status;
+- `A` opens a 10-second arming window;
+- `G` requests the guarded `+0.200rad/s` test only while freshly armed and
+  while all safety checks pass;
+- `X` requests an immediate zero-speed and Disable shutdown.
+
+The bounded test sends positive velocity commands for 1000 ms, holds zero
+speed for 200 ms, and then sends Disable. Enable, positive velocity, zero
+velocity, and Disable are the only motion-path CAN actions. Parameter polling
+pauses while motion or fault shutdown is active so it cannot contend with the
+10 ms control frames. A CAN transmit failure enters the controller's zero and
+Disable recovery path. `G` without a fresh `A` is rejected.
 
 ## Build and test
 
@@ -77,8 +95,27 @@ ComPort; its `/dev/cu.usbmodem*` suffix may change.
 screen /dev/cu.usbmodemXXXXXXXX 115200
 ```
 
-USB CDC ignores the selected baud rate, but `115200` keeps the command
-consistent with the earlier bench workflow.
+For [serial.baud-dance.com](https://serial.baud-dance.com/), use these exact
+settings:
+
+```text
+Port: STM32 Virtual ComPort (cu.usbmodem...)
+Baud rate: 115200
+Data bits: 8
+Parity: None
+Stop bits: 1
+Flow control: None / Off
+Receive format: ASCII
+Send format: ASCII
+HEX: Off
+Automatic send / Loop send: Off
+Line ending: None, CRLF, or LF
+```
+
+USB CDC does not actually depend on the selected baud rate; `115200` 8N1
+matches the prior F103 bench. Send one command character at a time: `S`, `A`,
+wait for `MOTION_ARMED EXPIRES_MS=10000`, then `G`. `G` without a fresh `A` is
+rejected.
 
 ## Source provenance
 
