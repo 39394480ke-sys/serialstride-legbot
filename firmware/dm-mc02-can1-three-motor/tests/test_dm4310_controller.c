@@ -38,16 +38,34 @@ static void test_arm_and_short_pulse_sequence(void)
     result = dm4310_controller_step(&controller, &safety);
     assert(result.event == DM4310_EVENT_RUNNING && result.send_mit);
 
-    safety.now_ms = 601u;
+    safety.now_ms = 2101u;
     result = dm4310_controller_step(&controller, &safety);
     assert(result.event == DM4310_EVENT_ZERO_HOLD && result.send_mit);
     assert(result.target_velocity_millirad_s == 0);
     assert(controller.target_velocity_millirad_s == 0);
 
-    safety.now_ms = 801u;
+    safety.now_ms = 2301u;
     result = dm4310_controller_step(&controller, &safety);
     assert(result.event == DM4310_EVENT_COMPLETE && result.send_disable);
     assert(controller.state == DM4310_MOTION_DISABLED);
+}
+
+static void test_zero_speed_test_remains_500_ms(void)
+{
+    Dm4310Controller controller;
+    Dm4310SafetySnapshot safety = safe_snapshot(0u);
+    Dm4310MotionDecision result;
+
+    dm4310_controller_init(&controller);
+    (void)dm4310_controller_command(&controller, 'A', &safety);
+    safety.now_ms = 1u;
+    (void)dm4310_controller_command(&controller, 'N', &safety);
+    safety.now_ms = 2u;
+    safety.motor_state = 1u;
+    (void)dm4310_controller_step(&controller, &safety);
+    safety.now_ms = 502u;
+    result = dm4310_controller_step(&controller, &safety);
+    assert(result.event == DM4310_EVENT_ZERO_HOLD && result.send_mit);
 }
 
 static void test_enable_deadline_fails_closed(void)
@@ -120,6 +138,7 @@ static void test_runtime_guards_and_emergency(void)
 int main(void)
 {
     test_arm_and_short_pulse_sequence();
+    test_zero_speed_test_remains_500_ms();
     test_enable_deadline_fails_closed();
     test_start_guards();
     test_runtime_guards_and_emergency();

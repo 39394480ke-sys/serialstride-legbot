@@ -4,7 +4,8 @@
 
 #define ARM_WINDOW_MS 10000u
 #define ENABLE_WAIT_MS 100u
-#define PULSE_MS 500u
+#define ZERO_SPEED_TEST_MS 500u
+#define MOTION_PULSE_MS 2000u
 #define ZERO_HOLD_MS 200u
 #define REFRESH_MS 10u
 #define FEEDBACK_MAX_AGE_MS 100u
@@ -142,6 +143,8 @@ Dm4310MotionDecision dm4310_controller_command(
     controller->state = DM4310_MOTION_ENABLE_WAIT;
     controller->target_velocity_millirad_s =
         command == (uint8_t)'G' ? 200 : command == (uint8_t)'B' ? -200 : 0;
+    controller->pulse_duration_ms =
+        command == (uint8_t)'N' ? ZERO_SPEED_TEST_MS : MOTION_PULSE_MS;
     controller->phase_started_ms = safety->now_ms;
     controller->last_command_ms = safety->now_ms;
     result = decision(DM4310_EVENT_ENABLE_REQUESTED, NULL);
@@ -199,7 +202,8 @@ Dm4310MotionDecision dm4310_controller_step(
         reason = runtime_trip(safety, true);
         if (reason != NULL)
             return fail_closed(controller, DM4310_EVENT_SAFETY_TRIP, reason);
-        if (elapsed(safety->now_ms, controller->phase_started_ms, PULSE_MS)) {
+        if (elapsed(safety->now_ms, controller->phase_started_ms,
+                    controller->pulse_duration_ms)) {
             controller->state = DM4310_MOTION_ZERO_HOLD;
             controller->target_velocity_millirad_s = 0;
             controller->phase_started_ms = safety->now_ms;

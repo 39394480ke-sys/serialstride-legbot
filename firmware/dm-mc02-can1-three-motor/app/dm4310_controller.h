@@ -57,6 +57,7 @@ typedef struct {
 typedef struct {
     Dm4310MotionState state;
     int32_t target_velocity_millirad_s;
+    uint32_t pulse_duration_ms;
     uint32_t armed_at_ms;
     uint32_t phase_started_ms;
     uint32_t last_command_ms;

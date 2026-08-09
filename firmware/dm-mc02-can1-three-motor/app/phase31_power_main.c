@@ -331,11 +331,12 @@ static void enqueue_motion_event(MotionLogQueue *queue,
         break;
     case DM4310_EVENT_RUNNING:
         (void)snprintf(record, sizeof(record),
-                       "[JOINT_A_MOTION] STATE=PULSE TARGET=%ld.%03ld DURATION_MS=500\r\n",
+                       "[JOINT_A_MOTION] STATE=PULSE TARGET=%ld.%03ld DURATION_MS=%u\r\n",
                        (long)(decision->target_velocity_millirad_s / 1000),
                        (long)(decision->target_velocity_millirad_s < 0
                                   ? -(decision->target_velocity_millirad_s % 1000)
-                                  : decision->target_velocity_millirad_s % 1000));
+                                  : decision->target_velocity_millirad_s % 1000),
+                       decision->target_velocity_millirad_s == 0 ? 500u : 2000u);
         format = record;
         break;
     case DM4310_EVENT_ZERO_HOLD:
