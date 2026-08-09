@@ -14,6 +14,9 @@ typedef struct {
 } Can1Status;
 
 void board_clock_init(void);
+void board_motor_power_init(void);
+void board_motor_power_set(bool enabled);
+bool board_motor_power_is_enabled(void);
 bool board_can1_init(void);
 bool board_can1_get_status(Can1Status *status);
 bool board_can1_recover(void);

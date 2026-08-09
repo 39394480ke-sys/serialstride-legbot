@@ -63,3 +63,13 @@ cc -std=c11 -Wall -Wextra -Werror \
   -o "$motion_io_out"
 
 "$motion_io_out"
+
+power_quiet_out="${TMPDIR:-/tmp}/dm-mc02-power-quiet-tests"
+
+cc -std=c11 -Wall -Wextra -Werror \
+  -I"$root/app" \
+  "$root/tests/test_power_quiet_controller.c" \
+  "$root/app/power_quiet_controller.c" \
+  -o "$power_quiet_out"
+
+"$power_quiet_out"

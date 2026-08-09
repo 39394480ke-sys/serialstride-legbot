@@ -3,6 +3,34 @@
 #include "main.h"
 
 static FDCAN_HandleTypeDef can1;
+static bool motor_power_enabled;
+
+void board_motor_power_init(void)
+{
+    GPIO_InitTypeDef gpio = {0};
+
+    __HAL_RCC_GPIOC_CLK_ENABLE();
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_14, GPIO_PIN_RESET);
+    gpio.Pin = GPIO_PIN_14;
+    gpio.Mode = GPIO_MODE_OUTPUT_PP;
+    gpio.Pull = GPIO_NOPULL;
+    gpio.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(GPIOC, &gpio);
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_14, GPIO_PIN_RESET);
+    motor_power_enabled = false;
+}
+
+void board_motor_power_set(bool enabled)
+{
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_14,
+                      enabled ? GPIO_PIN_SET : GPIO_PIN_RESET);
+    motor_power_enabled = enabled;
+}
+
+bool board_motor_power_is_enabled(void)
+{
+    return motor_power_enabled;
+}
 
 void board_clock_init(void)
 {

@@ -17,20 +17,21 @@ set(CMAKE_C_COMPILER "${STM32_TOOLCHAIN}/arm-none-eabi-gcc")
 set(CMAKE_ASM_COMPILER "${STM32_TOOLCHAIN}/arm-none-eabi-gcc")
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
-project(dm_mc02_phase1 C ASM)
+project(dm_mc02_phase31_power_quiet C ASM)
 
-set(TARGET dm_mc02_phase1)
+set(TARGET dm_mc02_phase31_power_quiet)
 set(ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 set(HAL ${ROOT}/vendor/Drivers/STM32H7xx_HAL_Driver)
 set(CMSIS ${ROOT}/vendor/Drivers/CMSIS)
 set(USB ${ROOT}/vendor/Middlewares/ST/STM32_USB_Device_Library)
 
 add_executable(${TARGET}
-    app/main.c
+    app/phase31_power_main.c
     app/h6215_protocol.c
     app/motion_controller.c
     app/motion_io.c
     app/phase1_monitor.c
+    app/power_quiet_controller.c
     app/feedback_timing.c
     app/usb_command_queue.c
     platform/src/board.c
