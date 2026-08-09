@@ -6,6 +6,7 @@
 #define ENABLE_WAIT_MS 100u
 #define ZERO_SPEED_TEST_MS 500u
 #define MOTION_PULSE_MS 2000u
+#define MOTION_TARGET_MILLIRAD_S 400
 #define ZERO_HOLD_MS 200u
 #define REFRESH_MS 10u
 #define FEEDBACK_MAX_AGE_MS 100u
@@ -142,7 +143,9 @@ Dm4310MotionDecision dm4310_controller_command(
 
     controller->state = DM4310_MOTION_ENABLE_WAIT;
     controller->target_velocity_millirad_s =
-        command == (uint8_t)'G' ? 200 : command == (uint8_t)'B' ? -200 : 0;
+        command == (uint8_t)'G'
+            ? MOTION_TARGET_MILLIRAD_S
+            : command == (uint8_t)'B' ? -MOTION_TARGET_MILLIRAD_S : 0;
     controller->pulse_duration_ms =
         command == (uint8_t)'N' ? ZERO_SPEED_TEST_MS : MOTION_PULSE_MS;
     controller->phase_started_ms = safety->now_ms;

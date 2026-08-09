@@ -30,7 +30,7 @@ static void test_arm_and_short_pulse_sequence(void)
 
     safety.now_ms = 1u;
     result = dm4310_controller_command(&controller, 'G', &safety);
-    assert(result.send_enable && result.target_velocity_millirad_s == 200);
+    assert(result.send_enable && result.target_velocity_millirad_s == 400);
     assert(controller.state == DM4310_MOTION_ENABLE_WAIT);
 
     safety.now_ms = 101u;

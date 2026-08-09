@@ -51,9 +51,9 @@ The firmware accepts one ASCII command character at a time over USB CDC:
 
 - `S` requests the current wheel and health status;
 - `A` opens a 10-second arming window;
-- `G` requests the guarded `+0.200rad/s` test only while freshly armed and
+- `G` requests the guarded `+0.400rad/s` test only while freshly armed and
   while all safety checks pass;
-- `B` requests the equivalent `-0.200rad/s` pulse;
+- `B` requests the equivalent `-0.400rad/s` pulse;
 - `C` starts continuous mode at zero speed;
 - in continuous mode, `+` and `-` change the target by `0.100rad/s`, clamped
   to `+/-0.500rad/s`; `0` selects zero and `K` refreshes the watchdog;
