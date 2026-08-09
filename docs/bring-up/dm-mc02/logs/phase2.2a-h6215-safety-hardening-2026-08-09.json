@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "date": "2026-08-09",
+  "test": "DM-MC02 H6215 Phase 2.2a safety-hardening regression",
+  "firmware": {
+    "commit": "75aadc1ae9be29037d718dec6f2ca6aed714f887",
+    "binary_sha256": "687cc89d3c9549527fe1565f8e1c51b6f0e3161acc9f89e87a4cd37db682d5af"
+  },
+  "source_exports": [
+    {
+      "path": "/Users/ke/Library/Mobile Documents/com~apple~CloudDocs/Downloads/records-2026-08-09-10-23-49.json",
+      "sha256": "f1592f0f684656a72ab0790a3ced3b60c9abc77f62b4a1307683a7da51383303",
+      "records": 11,
+      "reads": 9,
+      "writes": 2,
+      "purpose": "Full-queue emergency-stop priority"
+    },
+    {
+      "path": "/Users/ke/Library/Mobile Documents/com~apple~CloudDocs/Downloads/records-2026-08-09-10-24-45.json",
+      "sha256": "c0e1600fbec3c253b438145ab084bcbc5c97bbbeb5c944db61963b5d5170ad25",
+      "records": 43,
+      "reads": 41,
+      "writes": 2,
+      "purpose": "Guarded positive-motion regression"
+    }
+  ],
+  "verified_facts": {
+    "software": {
+      "host_tests": "PASS",
+      "clean_arm_build": "PASS",
+      "build_steps": 38,
+      "text_bytes": 29884,
+      "data_bytes": 332,
+      "bss_bytes": 15708,
+      "swapped_firmware_verified_by_stm32cubeprogrammer": true
+    },
+    "usb_disconnect_reconnect": {
+      "serial_command_bytes_sent": 0,
+      "uptime_ms_before_disconnect": 469500,
+      "uptime_ms_after_reconnect": 511500,
+      "mcu_reset_or_hardfault_observed": false,
+      "post_reconnect_state": "DISABLED",
+      "post_reconnect_can_health": "TEC=REC=0 warning=passive=bus_off=0"
+    },
+    "full_queue_emergency_stop": {
+      "write": "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqX",
+      "write_length": 33,
+      "markers": [
+        "EMERGENCY_STOP_REQUESTED",
+        "ZERO_SPEED_TX_OK",
+        "MOTOR_DISABLE_TX_OK"
+      ],
+      "motion_observed_in_telemetry": false,
+      "following_g_result": "START_REJECTED REASON=SEND_A_FIRST",
+      "final_state": "DISABLED"
+    },
+    "positive_motion_regression": {
+      "arm_write_local": "2026-08-09 10:24:35.898",
+      "start_write_local": "2026-08-09 10:24:38.742",
+      "markers": [
+        "MOTION_ARMED EXPIRES_MS=10000",
+        "MOTION_START_REQUESTED TARGET=+0.200rad/s",
+        "MOTOR_ENABLE_TX_OK",
+        "MOTION_RUNNING TARGET=+0.200rad/s DURATION_MS=1000",
+        "ZERO_SPEED_HOLD DURATION_MS=200",
+        "MOTOR_DISABLE_TX_OK",
+        "TEST_COMPLETE MOTOR_DISABLED"
+      ],
+      "running_feedback": {
+        "sample_count": 10,
+        "state": "ENABLED",
+        "feedback_age_ms": 9,
+        "velocity_rad_s": [0.186, 0.186],
+        "position_rad": [0.015, 0.193],
+        "position_delta_rad": 0.178,
+        "torque_nm": [0.007, 0.021],
+        "mos_temperature_c": 30,
+        "rotor_temperature_c": 28
+      },
+      "post_completion": {
+        "captured_ms": 5001,
+        "disabled_sample_count": 5,
+        "state": "DISABLED",
+        "velocity_rad_s": -0.011,
+        "final_can": "TEC=REC=0 warning=passive=bus_off=0",
+        "missed": 0
+      },
+      "absence_of_markers": [
+        "SAFETY_TRIP",
+        "TX_FAILURE"
+      ],
+      "tx_fail_counter": {
+        "value": 7413,
+        "changed_during_capture": false,
+        "origin": "Accumulated while the motor 24 V supply was previously off"
+      }
+    }
+  },
+  "user_observed_physical_behavior": {
+    "statement": "电机逆时针转动了",
+    "translation": "The motor rotated counterclockwise.",
+    "reference_viewpoint_specified": false,
+    "protocol_positive_to_mechanism_direction_mapping_verified": false
+  },
+  "ai_tool_derived_conclusion": "The three safety fixes passed their bounded software and hardware regression checks, and the guarded positive-motion happy path remained functional.",
+  "unverified_or_limited": {
+    "stale_fifo_fault_injection_on_hardware": "Not induced on hardware; receive-age conversion and loop-stall lower-bound behavior are covered by host tests, while live running feedback reported FB_AGE_MS=9.",
+    "usb_disconnect_during_active_motion": "Not attempted; USB disconnect/reconnect was tested only while safely disabled.",
+    "negative_motion": "Not implemented or tested.",
+    "continuous_motion": "Not implemented or tested.",
+    "direction_reference": "The observation viewpoint was not specified."
+  }
+}

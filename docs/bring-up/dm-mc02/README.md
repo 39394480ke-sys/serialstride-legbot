@@ -107,3 +107,20 @@ Phase 2.3。
 [`phase2.2a-h6215-positive-2026-08-08.json`](logs/phase2.2a-h6215-positive-2026-08-08.json)，
 由浏览器导出按原顺序拼接所有 `read` 项 `data` 字段得到的原始读取流见
 [`phase2.2a-h6215-positive-2026-08-08.log.gz`](logs/phase2.2a-h6215-positive-2026-08-08.log.gz)。
+
+### 2026-08-09 安全加固回归
+
+针对最终检查发现的三个安全问题，固件提交 `75aadc1` 增加了 CDC 未配置/复位
+保护、基于 FDCAN 接收时间与主循环周期的保守反馈时间，以及独立于普通队列容量的
+`X` 紧急停止通道。主机测试、干净 ARM 构建和 STM32CubeProgrammer 下载/校验均
+通过，固件 SHA-256 为
+`687cc89d3c9549527fe1565f8e1c51b6f0e3161acc9f89e87a4cd37db682d5af`。
+
+实机验证包括：Disabled 状态下物理拔插 USB 后 MCU uptime 连续增长；一次 33 字符
+满队列写入仍立即执行 `X`、零速和 Disable；随后单次 `A`/`G` 回归保持
+`V=+0.186 rad/s` 约 1 秒，零速保持约 200 ms 后自动 Disable，并继续记录超过
+5 秒的 Disabled/CAN 健康状态。用户再次明确观察到电机逆时针转动；由于观察
+视角未定义，仍不将其解释为协议正速度与机构方向的正式映射。
+
+最小回归证据见
+[`phase2.2a-h6215-safety-hardening-2026-08-09.json`](logs/phase2.2a-h6215-safety-hardening-2026-08-09.json)。
