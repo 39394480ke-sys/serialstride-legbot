@@ -19,7 +19,7 @@ set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
 project(dm_mc02_phase31_power_quiet C ASM)
 
-set(TARGET dm_mc02_phase31_power_quiet)
+set(TARGET dm_mc02_phase31_joint_a)
 set(ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 set(HAL ${ROOT}/vendor/Drivers/STM32H7xx_HAL_Driver)
 set(CMSIS ${ROOT}/vendor/Drivers/CMSIS)
@@ -27,6 +27,8 @@ set(USB ${ROOT}/vendor/Middlewares/ST/STM32_USB_Device_Library)
 
 add_executable(${TARGET}
     app/phase31_power_main.c
+    app/dm4310_protocol.c
+    app/dm4310_controller.c
     app/h6215_protocol.c
     app/motion_controller.c
     app/motion_io.c

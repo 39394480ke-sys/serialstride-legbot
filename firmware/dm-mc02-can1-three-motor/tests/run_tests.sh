@@ -73,3 +73,24 @@ cc -std=c11 -Wall -Wextra -Werror \
   -o "$power_quiet_out"
 
 "$power_quiet_out"
+
+dm4310_protocol_out="${TMPDIR:-/tmp}/dm-mc02-dm4310-protocol-tests"
+
+cc -std=c11 -Wall -Wextra -Werror \
+  -I"$root/app" \
+  "$root/tests/test_dm4310_protocol.c" \
+  "$root/app/dm4310_protocol.c" \
+  -lm \
+  -o "$dm4310_protocol_out"
+
+"$dm4310_protocol_out"
+
+dm4310_controller_out="${TMPDIR:-/tmp}/dm-mc02-dm4310-controller-tests"
+
+cc -std=c11 -Wall -Wextra -Werror \
+  -I"$root/app" \
+  "$root/tests/test_dm4310_controller.c" \
+  "$root/app/dm4310_controller.c" \
+  -o "$dm4310_controller_out"
+
+"$dm4310_controller_out"
