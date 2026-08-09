@@ -57,6 +57,12 @@ bool dm4310_build_mit_command(int32_t position_millirad,
                               int32_t kp_milli, int32_t kd_milli,
                               int32_t torque_millinewton_m,
                               Dm4310CanFrame *frame);
+bool dm4310_build_mit_command_for(uint8_t motor_id,
+                                  int32_t position_millirad,
+                                  int32_t velocity_millirad_s,
+                                  int32_t kp_milli, int32_t kd_milli,
+                                  int32_t torque_millinewton_m,
+                                  Dm4310CanFrame *frame);
 bool dm4310_parse_parameter_response(const Dm4310CanFrame *frame,
                                      Dm4310ParameterResponse *response);
 bool dm4310_parse_feedback(const Dm4310CanFrame *frame,

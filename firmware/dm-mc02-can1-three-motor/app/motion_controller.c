@@ -10,6 +10,7 @@
 #define ENABLE_WAIT_MS 100u
 #define PULSE_MS 1000u
 #define ZERO_HOLD_MS 200u
+#define DISABLE_WAIT_MS 200u
 #define REFRESH_MS 10u
 #define RAMP_MS 100u
 #define WATCHDOG_MS 5000u
@@ -239,11 +240,30 @@ MotionDecision motion_controller_step(MotionController *c,
         reason = runtime_trip(s, true);
         if (reason != NULL) return fault_stop(c, s->now_ms, MOTION_EVENT_SAFETY_TRIP, reason);
         if (elapsed(s->now_ms, c->phase_started_ms, ZERO_HOLD_MS)) {
-            c->state = MOTION_IDLE_DISABLED;
-            return decision(MOTION_ACTION_DISABLE, MOTION_EVENT_COMPLETE,
+            c->state = MOTION_DISABLE_WAIT;
+            c->phase_started_ms = s->now_ms;
+            return decision(MOTION_ACTION_DISABLE,
+                            MOTION_EVENT_DISABLE_REQUESTED,
                             c->watchdog_stop ? "HOST_WATCHDOG" : NULL, 0);
         }
         if (elapsed(s->now_ms, c->last_action_ms, REFRESH_MS)) return refresh(c, s->now_ms, 0);
+        return decision(MOTION_ACTION_NONE, MOTION_EVENT_NONE, NULL, 0);
+    case MOTION_DISABLE_WAIT:
+        reason = runtime_trip(s, false);
+        if (reason != NULL)
+            return fault_stop(c, s->now_ms, MOTION_EVENT_SAFETY_TRIP,
+                              reason);
+        if (s->motor_state == MOTOR_DISABLED) {
+            c->state = MOTION_IDLE_DISABLED;
+            return decision(MOTION_ACTION_NONE, MOTION_EVENT_COMPLETE,
+                            c->watchdog_stop ? "HOST_WATCHDOG" : NULL, 0);
+        }
+        if (s->motor_state != MOTOR_ENABLED)
+            return fault_stop(c, s->now_ms, MOTION_EVENT_SAFETY_TRIP,
+                              "STATE_ABNORMAL");
+        if (elapsed(s->now_ms, c->phase_started_ms, DISABLE_WAIT_MS))
+            return fault_stop(c, s->now_ms, MOTION_EVENT_SAFETY_TRIP,
+                              "DISABLE_TIMEOUT");
         return decision(MOTION_ACTION_NONE, MOTION_EVENT_NONE, NULL, 0);
     case MOTION_FAULT_ZERO:
         c->state = MOTION_FAULT_DISABLE; c->last_action_ms = s->now_ms;
@@ -280,6 +300,7 @@ const char *motion_controller_state_name(MotionState state)
     case MOTION_CONTINUOUS: return "CONTINUOUS";
     case MOTION_WATCHDOG_RAMP: return "WATCHDOG_RAMP";
     case MOTION_ZERO_HOLD: return "ZERO_HOLD";
+    case MOTION_DISABLE_WAIT: return "DISABLE_WAIT";
     case MOTION_FAULT_ZERO: return "FAULT_ZERO";
     case MOTION_FAULT_DISABLE: return "FAULT_DISABLE";
     default: return "UNKNOWN";

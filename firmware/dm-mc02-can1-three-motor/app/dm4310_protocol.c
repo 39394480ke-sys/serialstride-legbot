@@ -121,13 +121,26 @@ bool dm4310_build_mit_command(int32_t position_millirad,
                               int32_t torque_millinewton_m,
                               Dm4310CanFrame *frame)
 {
+    return dm4310_build_mit_command_for(
+        DM4310_CAN_ID, position_millirad, velocity_millirad_s, kp_milli,
+        kd_milli, torque_millinewton_m, frame);
+}
+
+bool dm4310_build_mit_command_for(uint8_t motor_id,
+                                  int32_t position_millirad,
+                                  int32_t velocity_millirad_s,
+                                  int32_t kp_milli, int32_t kd_milli,
+                                  int32_t torque_millinewton_m,
+                                  Dm4310CanFrame *frame)
+{
     uint32_t position;
     uint32_t velocity;
     uint32_t kp;
     uint32_t kd;
     uint32_t torque;
 
-    if (frame == NULL || position_millirad < -DM4310_P_MAX_MILLIRAD ||
+    if (frame == NULL || motor_id > 0x0fu ||
+        position_millirad < -DM4310_P_MAX_MILLIRAD ||
         position_millirad > DM4310_P_MAX_MILLIRAD ||
         velocity_millirad_s < -DM4310_V_MAX_MILLIRAD_S ||
         velocity_millirad_s > DM4310_V_MAX_MILLIRAD_S ||
@@ -147,7 +160,7 @@ bool dm4310_build_mit_command(int32_t position_millirad,
     torque = encode_signed_range(torque_millinewton_m,
                                  DM4310_T_MAX_MILLINEWTON_M, 4095u);
 
-    frame->id = DM4310_CAN_ID;
+    frame->id = motor_id;
     frame->dlc = 8u;
     frame->data[0] = (uint8_t)(position >> 8);
     frame->data[1] = (uint8_t)position;

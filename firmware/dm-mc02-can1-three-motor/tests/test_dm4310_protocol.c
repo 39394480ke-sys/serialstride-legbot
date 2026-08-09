@@ -39,6 +39,10 @@ static void test_mit_known_vectors_and_bounds(void)
     assert(frame.data[2] == 0x80u && frame.data[3] == 0xd0u);
     assert(dm4310_build_mit_command(0, -200, 0, 500, 0, &frame));
     assert(frame.data[2] == 0x7fu && frame.data[3] == 0x10u);
+    assert(dm4310_build_mit_command_for(6u, 0, 200, 0, 500, 0, &frame));
+    assert(frame.id == 6u && frame.data[2] == 0x80u &&
+           frame.data[3] == 0xd0u);
+    assert(!dm4310_build_mit_command_for(16u, 0, 0, 0, 500, 0, &frame));
 
     assert(dm4310_build_mit_command(-12500, -30000, 0, 0, -10000,
                                     &frame));

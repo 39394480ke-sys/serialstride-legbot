@@ -228,6 +228,7 @@ static void test_emergency_stop_requests_zero_from_every_state(void)
         MOTION_ENABLE_WAIT,
         MOTION_RUNNING,
         MOTION_ZERO_HOLD,
+        MOTION_DISABLE_WAIT,
         MOTION_FAULT_ZERO,
         MOTION_FAULT_DISABLE,
     };
@@ -389,8 +390,35 @@ static void test_runs_the_fixed_positive_timeline(void)
     safety.now_ms = 1300u;
     decision = motion_controller_step(&controller, &safety);
     assert(decision.action == MOTION_ACTION_DISABLE);
+    assert(decision.event == MOTION_EVENT_DISABLE_REQUESTED);
+    assert(controller.state == MOTION_DISABLE_WAIT);
+
+    safety.now_ms = 1301u;
+    decision = motion_controller_step(&controller, &safety);
+    assert(decision.action == MOTION_ACTION_NONE);
+    assert(decision.event == MOTION_EVENT_NONE);
+    assert(controller.state == MOTION_DISABLE_WAIT);
+
+    safety.now_ms = 1302u;
+    safety.motor_state = 0u;
+    decision = motion_controller_step(&controller, &safety);
+    assert(decision.action == MOTION_ACTION_NONE);
     assert(decision.event == MOTION_EVENT_COMPLETE);
     assert(controller.state == MOTION_IDLE_DISABLED);
+}
+
+static void test_disable_confirmation_timeout_fails_closed(void)
+{
+    MotionController controller = {
+        .state = MOTION_DISABLE_WAIT,
+        .phase_started_ms = 100u,
+    };
+    MotionSafetySnapshot safety = safe_enabled_snapshot(300u);
+    MotionDecision decision = motion_controller_step(&controller, &safety);
+
+    assert(decision.action == MOTION_ACTION_ZERO_VELOCITY);
+    assert(decision.event == MOTION_EVENT_SAFETY_TRIP);
+    assert(strcmp(decision.reason, "DISABLE_TIMEOUT") == 0);
 }
 
 static void assert_runtime_trip(MotionSafetySnapshot safety,
@@ -541,8 +569,12 @@ static void test_continuous_ramp_clamp_keepalive_and_watchdog(void)
     safety.now_ms = 5601u;
     decision = motion_controller_step(&controller, &safety);
     assert(decision.action == MOTION_ACTION_DISABLE);
-    assert(decision.event == MOTION_EVENT_COMPLETE);
+    assert(decision.event == MOTION_EVENT_DISABLE_REQUESTED);
     assert(strcmp(decision.reason, "HOST_WATCHDOG") == 0);
+    safety.now_ms = 5602u;
+    safety.motor_state = 0u;
+    decision = motion_controller_step(&controller, &safety);
+    assert(decision.event == MOTION_EVENT_COMPLETE);
 }
 
 static void test_continuous_runtime_safety_still_fails_closed(void)
@@ -578,6 +610,7 @@ int main(void)
     test_enable_wait_trips_on_fresh_unsafe_feedback_during_grace();
     test_enable_wait_trips_on_can_fault_with_stale_feedback();
     test_runs_the_fixed_positive_timeline();
+    test_disable_confirmation_timeout_fails_closed();
     test_runtime_safety_trips_zero_then_disable();
     test_transmit_failure_requests_zero_then_disable();
     test_failed_zero_command_immediately_falls_back_to_disable();

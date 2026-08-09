@@ -17,9 +17,9 @@ set(CMAKE_C_COMPILER "${STM32_TOOLCHAIN}/arm-none-eabi-gcc")
 set(CMAKE_ASM_COMPILER "${STM32_TOOLCHAIN}/arm-none-eabi-gcc")
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
-project(dm_mc02_phase33_three_motor_read_only C ASM)
+project(dm_mc02_phase34_three_motor_sequential C ASM)
 
-set(TARGET dm_mc02_phase33_three_motor_read_only)
+set(TARGET dm_mc02_phase34_three_motor_sequential)
 set(ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 set(HAL ${ROOT}/vendor/Drivers/STM32H7xx_HAL_Driver)
 set(CMSIS ${ROOT}/vendor/Drivers/CMSIS)

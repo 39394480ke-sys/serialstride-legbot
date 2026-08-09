@@ -8,6 +8,7 @@
 #define MOTION_PULSE_MS 2000u
 #define MOTION_TARGET_MILLIRAD_S 400
 #define ZERO_HOLD_MS 200u
+#define DISABLE_WAIT_MS 200u
 #define REFRESH_MS 10u
 #define FEEDBACK_MAX_AGE_MS 100u
 #define START_SPEED_LIMIT_MILLIRAD_S 100
@@ -229,8 +230,9 @@ Dm4310MotionDecision dm4310_controller_step(
             return fail_closed(controller, DM4310_EVENT_SAFETY_TRIP, reason);
         if (elapsed(safety->now_ms, controller->phase_started_ms,
                     ZERO_HOLD_MS)) {
-            controller->state = DM4310_MOTION_DISABLED;
-            result = decision(DM4310_EVENT_COMPLETE, NULL);
+            controller->state = DM4310_MOTION_DISABLE_WAIT;
+            controller->phase_started_ms = safety->now_ms;
+            result = decision(DM4310_EVENT_DISABLE_REQUESTED, NULL);
             result.send_disable = true;
             return result;
         }
@@ -238,6 +240,23 @@ Dm4310MotionDecision dm4310_controller_step(
             controller->last_command_ms = safety->now_ms;
             result.send_mit = true;
         }
+    }
+    if (controller->state == DM4310_MOTION_DISABLE_WAIT) {
+        reason = runtime_trip(safety, false);
+        if (reason != NULL)
+            return fail_closed(controller, DM4310_EVENT_SAFETY_TRIP, reason);
+        if (safety->motor_state == 0u) {
+            controller->state = DM4310_MOTION_DISABLED;
+            return decision(DM4310_EVENT_COMPLETE, NULL);
+        }
+        if (safety->motor_state != 1u)
+            return fail_closed(controller, DM4310_EVENT_SAFETY_TRIP,
+                               "STATE_ABNORMAL");
+        if (elapsed(safety->now_ms, controller->phase_started_ms,
+                    DISABLE_WAIT_MS))
+            return fail_closed(controller, DM4310_EVENT_SAFETY_TRIP,
+                               "DISABLE_TIMEOUT");
+        return result;
     }
     return result;
 }
@@ -258,6 +277,7 @@ const char *dm4310_motion_state_name(Dm4310MotionState state)
     case DM4310_MOTION_ENABLE_WAIT: return "ENABLE_WAIT";
     case DM4310_MOTION_PULSE: return "PULSE";
     case DM4310_MOTION_ZERO_HOLD: return "ZERO_HOLD";
+    case DM4310_MOTION_DISABLE_WAIT: return "DISABLE_WAIT";
     default: return "UNKNOWN";
     }
 }
