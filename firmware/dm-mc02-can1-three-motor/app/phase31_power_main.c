@@ -23,6 +23,7 @@
 #define ONLINE_TIMEOUT_MS 500u
 #define USB_COMMANDS_PER_LOOP 32u
 #define PARAMETER_MASK_COMPLETE 0x1fu
+#define MIT_KD_MILLI 1000
 
 typedef struct {
     uint32_t last_any_rx_ms;
@@ -299,7 +300,8 @@ static void reset_after_power_cut(PowerQuietController *power,
 static bool send_zero_and_disable(JointStatus *joint)
 {
     Dm4310CanFrame frame;
-    bool success = dm4310_build_mit_command(0, 0, 0, 500, 0, &frame) &&
+    bool success = dm4310_build_mit_command(
+                       0, 0, 0, MIT_KD_MILLI, 0, &frame) &&
                    transmit(joint, &frame);
 
     if (!dm4310_build_disable_command(&frame) || !transmit(joint, &frame))
@@ -377,8 +379,8 @@ static bool execute_motion_decision(
         success = dm4310_build_enable_command(&frame) && transmit(joint, &frame);
     if (success && decision.send_mit)
         success = dm4310_build_mit_command(
-                      0, decision.target_velocity_millirad_s, 0, 500, 0,
-                      &frame) &&
+                      0, decision.target_velocity_millirad_s, 0,
+                      MIT_KD_MILLI, 0, &frame) &&
                   transmit(joint, &frame);
     if (success && decision.send_disable)
         success = dm4310_build_disable_command(&frame) && transmit(joint, &frame);
@@ -625,6 +627,7 @@ int main(void)
                 ? "MC02_BOOT\r\nPHASE31_JOINT_A_GUARDED\r\n"
                   "CAN1_INIT_OK BITRATE=1000000 TX=GUARDED\r\n"
                   "JOINT_A ID=6 MST_ID=3 MODE=MIT COMMANDS=S,A,P,R,N,G,B,X\r\n"
+                  "MIT_GAINS KP=0.0 KD=1.0 TORQUE_LIMIT=0.5Nm\r\n"
                   "DEFAULT_POWER=OFF DEFAULT_MOTOR=DISABLED\r\n"
                 : "MC02_BOOT\r\nPHASE31_JOINT_A_GUARDED\r\n"
                   "CAN1_INIT_ERROR\r\nDEFAULT_POWER=OFF\r\n";

@@ -42,6 +42,7 @@ static void test_arm_and_short_pulse_sequence(void)
     result = dm4310_controller_step(&controller, &safety);
     assert(result.event == DM4310_EVENT_ZERO_HOLD && result.send_mit);
     assert(result.target_velocity_millirad_s == 0);
+    assert(controller.target_velocity_millirad_s == 0);
 
     safety.now_ms = 801u;
     result = dm4310_controller_step(&controller, &safety);

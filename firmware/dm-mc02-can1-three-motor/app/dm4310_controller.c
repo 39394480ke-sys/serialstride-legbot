@@ -201,6 +201,7 @@ Dm4310MotionDecision dm4310_controller_step(
             return fail_closed(controller, DM4310_EVENT_SAFETY_TRIP, reason);
         if (elapsed(safety->now_ms, controller->phase_started_ms, PULSE_MS)) {
             controller->state = DM4310_MOTION_ZERO_HOLD;
+            controller->target_velocity_millirad_s = 0;
             controller->phase_started_ms = safety->now_ms;
             controller->last_command_ms = safety->now_ms;
             result = decision(DM4310_EVENT_ZERO_HOLD, NULL);
