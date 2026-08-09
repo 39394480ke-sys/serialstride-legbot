@@ -1,9 +1,35 @@
 # DM-MC02 CAN1 three-motor firmware
 
 This directory is the firmware base for the single-side three-motor CAN1
-network. It contains the completed DM-MC02 Phase 1 bring-up, the Phase 2.1
-H6215 parameter/feedback probe, and the guarded Phase 2 motion controls.
-Motion is off by default and every start requires an explicit arming command.
+network. It contains the completed DM-MC02 bring-up and the guarded
+three-motor controls for two DM4310 joints and one H6215 wheel. Motion is off
+by default and every start requires an explicit arming command.
+
+## Architecture
+
+The active firmware is split by ownership rather than CAN ID branches in the
+application entry point:
+
+```text
+drivers/
+  can_bus/                 CAN transport and receive timing
+  uart/                    USB command queue and non-blocking serial logger
+motors/
+  dm4310/                  DM4310 protocol and single-motor controller
+  h6215/                   H6215 protocol and single-motor controller
+  motor_manager/           unified states, routing, group commands, parallel control
+safety/
+  safety_manager/          single and parallel safety snapshots and global trips
+app/
+  three_motor_bringup/     command orchestration and telemetry
+legacy/                    uncompiled historical bring-up entry points
+```
+
+`MotorState` is the single runtime representation for every motor. It owns
+the motor type and role, CAN/MST IDs, online state, feedback values and age,
+parameters, temperatures, and TX/RX counters. `MotorManager` is the only
+module that parses incoming device frames or emits group commands.
+`SafetyManager` derives controller snapshots from those unified states.
 
 ## Phase 1 behavior
 
@@ -47,17 +73,18 @@ P_MAX=12.500 V_MAX=45.000 T_MAX=10.000 PARAM_MASK=0x1F
 
 ## Guarded motion controls
 
-The firmware accepts one ASCII command character at a time over USB CDC:
+The current firmware accepts one ASCII command character at a time over USB
+CDC:
 
-- `S` requests the current wheel and health status;
-- `A` opens a 10-second arming window;
-- `G` requests the guarded `+0.400rad/s` test only while freshly armed and
-  while all safety checks pass;
-- `B` requests the equivalent `-0.400rad/s` pulse;
-- `C` starts continuous mode at zero speed;
-- in continuous mode, `+` and `-` change the target by `0.100rad/s`, clamped
-  to `+/-0.500rad/s`; `0` selects zero and `K` refreshes the watchdog;
-- `X` requests an immediate zero-speed and Disable shutdown.
+- `S` requests all motor and CAN status;
+- while power is off, `A`, then `P`, enables VCC_OUT1 in quiet mode;
+- `R` starts the guarded three-device probe;
+- `1`, `2`, and `3` select JOINT_A, JOINT_B, and WHEEL respectively;
+- `4` selects all three motors for a bounded parallel test;
+- after selection, `A` opens a 10-second one-shot motion arm;
+- `G` and `B` request the bounded positive and negative tests;
+- `X` has a priority path that zeros and Disables all motors and turns
+  VCC_OUT1 off.
 
 Both bounded pulses send velocity commands for 1000 ms, hold zero for 200 ms,
 and then Disable. Continuous mode refreshes the command every 10 ms and ramps
@@ -83,9 +110,9 @@ cmake --build build
 The generated files are:
 
 ```text
-build/dm_mc02_phase1.elf
-build/dm_mc02_phase1.bin
-build/dm_mc02_phase1.map
+build/dm_mc02_phase35_three_motor_parallel.elf
+build/dm_mc02_phase35_three_motor_parallel.bin
+build/dm_mc02_phase35_three_motor_parallel.map
 ```
 
 ## Flash and observe
