@@ -124,3 +124,32 @@ Phase 2.3。
 
 最小回归证据见
 [`phase2.2a-h6215-safety-hardening-2026-08-09.json`](logs/phase2.2a-h6215-safety-hardening-2026-08-09.json)。
+
+## Phase 2 完整 H6215 驱动迁移
+
+2026-08-09 将 F103 台架已验证的反向脉冲、连续速度、斜坡、主机看门狗与
+显式停止迁移到 MC02。提交 `3dc2464` 的主机测试和干净 ARM 构建通过，
+二进制 SHA-256 为
+`514106d11e02f69f05824df70d8851fdb008896c98d1c2373a08ad97bef206d9`，
+并由 STM32CubeProgrammer 写入 `0x08000000`、校验和复位成功。
+
+实机上，`A`/`B` 反向脉冲三次均返回 `V=-0.209 rad/s`，运行 1 秒、
+零速保持 200 ms 后自动 Disable。连续模式按 100 ms 速度步进从零到
+`+0.500 rad/s`，实际反馈 `+0.494 rad/s`；第六个 `+` 仍限制在
+`+0.500 rad/s`。随后斜坡反转至 `-0.500 rad/s`，实际反馈
+`-0.517 rad/s`。`0` 会斜坡回零但保持 Enabled；再到 `+0.200 rad/s`
+后停止控制字符，5 秒看门狗按预期斜坡回零、保持 200 ms 并 Disable。
+另一次连续测试以 `X` 结束，立即零速并 Disable。所有运动段均无
+`SAFETY_TRIP` 和新的 TX failure，CAN warning/passive/bus-off 均为零。
+
+用户在同一观察位置明确确认正速度先逆时针、负速度后顺时针。
+该方向映射仅对此台架当前观察面成立。
+
+最后的 30 分钟 24 V 带电静置采集到 1800 组 `[WHEEL]` 和 1800 组
+`HEALTH`；uptime 从 645406 ms 增至 2444406 ms，无复位，1800 组均为
+ONLINE 且 Disabled，无 CAN 异常，TX failure 增量为零，最高温度为
+`TMOS=30 C` / `TROTOR=28 C`。危险故障注入（超温、超速和运动中 USB
+断开）仅由主机测试覆盖，未对实机人为制造故障。
+
+最小证据摘要见
+[`phase2-h6215-complete-2026-08-09.json`](logs/phase2-h6215-complete-2026-08-09.json)。
