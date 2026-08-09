@@ -8,7 +8,7 @@
   },
   "source_exports": [
     {
-      "path": "/Users/ke/Library/Mobile Documents/com~apple~CloudDocs/Downloads/records-2026-08-09-10-23-49.json",
+      "path": "records-2026-08-09-10-23-49.json",
       "sha256": "f1592f0f684656a72ab0790a3ced3b60c9abc77f62b4a1307683a7da51383303",
       "records": 11,
       "reads": 9,
@@ -16,7 +16,7 @@
       "purpose": "Full-queue emergency-stop priority"
     },
     {
-      "path": "/Users/ke/Library/Mobile Documents/com~apple~CloudDocs/Downloads/records-2026-08-09-10-24-45.json",
+      "path": "records-2026-08-09-10-24-45.json",
       "sha256": "c0e1600fbec3c253b438145ab084bcbc5c97bbbeb5c944db61963b5d5170ad25",
       "records": 43,
       "reads": 41,

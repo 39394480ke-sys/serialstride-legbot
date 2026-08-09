@@ -10,7 +10,7 @@
   },
   "provenance": {
     "browser_export": {
-      "path": "/Users/ke/Library/Mobile Documents/com~apple~CloudDocs/Downloads/records-2026-08-08-20-36-38.json",
+      "path": "records-2026-08-08-20-36-38.json",
       "sha256": "8ad6837f73724f52b4ac15a4a9b6736b8beac2e20adc3dbd36b6840c0e23c0b4",
       "record_count": 52,
       "read_record_count": 50,
@@ -26,7 +26,7 @@
       "gzip_sha256": "3510617e4f3ae4b0934832789bc9a2712ea2cdeb87d1d51e26e8ff82abe29888",
       "extraction": "The 50 export records where type == read were selected in array order and their data strings were concatenated byte-for-byte. Write records, browser timestamps, and browser metadata remain in the source export and are not inserted into this device read stream.",
       "commands": [
-        "jq -j '.[] | select(.type == \"read\") | .data' '/Users/ke/Library/Mobile Documents/com~apple~CloudDocs/Downloads/records-2026-08-08-20-36-38.json' > /tmp/phase2.2a-h6215-positive-2026-08-08.log",
+        "jq -j '.[] | select(.type == \"read\") | .data' records-2026-08-08-20-36-38.json > /tmp/phase2.2a-h6215-positive-2026-08-08.log",
         "gzip -n -c /tmp/phase2.2a-h6215-positive-2026-08-08.log > docs/bring-up/dm-mc02/logs/phase2.2a-h6215-positive-2026-08-08.log.gz"
       ]
     },
