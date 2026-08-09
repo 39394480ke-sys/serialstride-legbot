@@ -38,26 +38,29 @@ static int32_t decode_signed_range(uint32_t raw, int32_t limit,
     return (int32_t)(((int64_t)raw * (int64_t)limit * 2) / maximum) - limit;
 }
 
-static bool build_system_command(uint8_t opcode, Dm4310CanFrame *frame)
+static bool build_system_command(uint8_t motor_id, uint8_t opcode,
+                                 Dm4310CanFrame *frame)
 {
-    if (frame == NULL) {
+    if (frame == NULL || motor_id > 0x0fu) {
         return false;
     }
-    frame->id = DM4310_CAN_ID;
+    frame->id = motor_id;
     frame->dlc = 8u;
     memset(frame->data, 0xff, 7u);
     frame->data[7] = opcode;
     return true;
 }
 
-bool dm4310_build_read_request(uint8_t register_id, Dm4310CanFrame *frame)
+bool dm4310_build_read_request_for(uint8_t motor_id, uint8_t register_id,
+                                   Dm4310CanFrame *frame)
 {
-    if (frame == NULL || !readable_register(register_id)) {
+    if (frame == NULL || motor_id > 0x0fu ||
+        !readable_register(register_id)) {
         return false;
     }
     frame->id = 0x7ffu;
     frame->dlc = 8u;
-    frame->data[0] = DM4310_CAN_ID;
+    frame->data[0] = motor_id;
     frame->data[1] = 0u;
     frame->data[2] = 0x33u;
     frame->data[3] = register_id;
@@ -65,28 +68,51 @@ bool dm4310_build_read_request(uint8_t register_id, Dm4310CanFrame *frame)
     return true;
 }
 
-bool dm4310_build_feedback_request(Dm4310CanFrame *frame)
+bool dm4310_build_read_request(uint8_t register_id, Dm4310CanFrame *frame)
 {
-    if (frame == NULL) {
+    return dm4310_build_read_request_for(DM4310_CAN_ID, register_id, frame);
+}
+
+bool dm4310_build_feedback_request_for(uint8_t motor_id,
+                                       Dm4310CanFrame *frame)
+{
+    if (frame == NULL || motor_id > 0x0fu) {
         return false;
     }
     frame->id = 0x7ffu;
     frame->dlc = 8u;
-    frame->data[0] = DM4310_CAN_ID;
+    frame->data[0] = motor_id;
     frame->data[1] = 0u;
     frame->data[2] = 0xccu;
     memset(&frame->data[3], 0, 5u);
     return true;
 }
 
+bool dm4310_build_feedback_request(Dm4310CanFrame *frame)
+{
+    return dm4310_build_feedback_request_for(DM4310_CAN_ID, frame);
+}
+
 bool dm4310_build_enable_command(Dm4310CanFrame *frame)
 {
-    return build_system_command(0xfcu, frame);
+    return dm4310_build_enable_command_for(DM4310_CAN_ID, frame);
 }
 
 bool dm4310_build_disable_command(Dm4310CanFrame *frame)
 {
-    return build_system_command(0xfdu, frame);
+    return dm4310_build_disable_command_for(DM4310_CAN_ID, frame);
+}
+
+bool dm4310_build_enable_command_for(uint8_t motor_id,
+                                     Dm4310CanFrame *frame)
+{
+    return build_system_command(motor_id, 0xfcu, frame);
+}
+
+bool dm4310_build_disable_command_for(uint8_t motor_id,
+                                      Dm4310CanFrame *frame)
+{
+    return build_system_command(motor_id, 0xfdu, frame);
 }
 
 bool dm4310_build_mit_command(int32_t position_millirad,
@@ -134,13 +160,15 @@ bool dm4310_build_mit_command(int32_t position_millirad,
     return true;
 }
 
-bool dm4310_parse_parameter_response(const Dm4310CanFrame *frame,
-                                     Dm4310ParameterResponse *response)
+bool dm4310_parse_parameter_response_for(
+    uint8_t motor_id, uint8_t master_id, const Dm4310CanFrame *frame,
+    Dm4310ParameterResponse *response)
 {
     uint32_t raw_value;
 
-    if (frame == NULL || response == NULL || frame->id != DM4310_MASTER_ID ||
-        frame->dlc != 8u || frame->data[0] != DM4310_CAN_ID ||
+    if (motor_id > 0x0fu || master_id > 0x7fu || frame == NULL ||
+        response == NULL || frame->id != master_id ||
+        frame->dlc != 8u || frame->data[0] != motor_id ||
         frame->data[1] != 0u || frame->data[2] != 0x33u ||
         !readable_register(frame->data[3])) {
         return false;
@@ -152,15 +180,24 @@ bool dm4310_parse_parameter_response(const Dm4310CanFrame *frame,
     return true;
 }
 
-bool dm4310_parse_feedback(const Dm4310CanFrame *frame,
-                           Dm4310Feedback *feedback)
+bool dm4310_parse_parameter_response(const Dm4310CanFrame *frame,
+                                     Dm4310ParameterResponse *response)
+{
+    return dm4310_parse_parameter_response_for(
+        DM4310_CAN_ID, DM4310_MASTER_ID, frame, response);
+}
+
+bool dm4310_parse_feedback_for(uint8_t motor_id, uint8_t master_id,
+                               const Dm4310CanFrame *frame,
+                               Dm4310Feedback *feedback)
 {
     uint32_t position;
     uint32_t velocity;
     uint32_t torque;
 
-    if (frame == NULL || feedback == NULL || frame->id != DM4310_MASTER_ID ||
-        frame->dlc != 8u || (frame->data[0] & 0x0fu) != DM4310_CAN_ID) {
+    if (motor_id > 0x0fu || master_id > 0x7fu || frame == NULL ||
+        feedback == NULL || frame->id != master_id || frame->dlc != 8u ||
+        (frame->data[0] & 0x0fu) != motor_id) {
         return false;
     }
     position = ((uint32_t)frame->data[1] << 8) | frame->data[2];
@@ -178,6 +215,13 @@ bool dm4310_parse_feedback(const Dm4310CanFrame *frame,
     feedback->mos_temperature_c = frame->data[6];
     feedback->rotor_temperature_c = frame->data[7];
     return true;
+}
+
+bool dm4310_parse_feedback(const Dm4310CanFrame *frame,
+                           Dm4310Feedback *feedback)
+{
+    return dm4310_parse_feedback_for(DM4310_CAN_ID, DM4310_MASTER_ID,
+                                     frame, feedback);
 }
 
 const char *dm4310_state_name(uint8_t state)

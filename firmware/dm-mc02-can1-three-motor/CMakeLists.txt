@@ -17,16 +17,16 @@ set(CMAKE_C_COMPILER "${STM32_TOOLCHAIN}/arm-none-eabi-gcc")
 set(CMAKE_ASM_COMPILER "${STM32_TOOLCHAIN}/arm-none-eabi-gcc")
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
-project(dm_mc02_phase31_power_quiet C ASM)
+project(dm_mc02_phase33_three_motor_read_only C ASM)
 
-set(TARGET dm_mc02_phase31_joint_a)
+set(TARGET dm_mc02_phase33_three_motor_read_only)
 set(ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 set(HAL ${ROOT}/vendor/Drivers/STM32H7xx_HAL_Driver)
 set(CMSIS ${ROOT}/vendor/Drivers/CMSIS)
 set(USB ${ROOT}/vendor/Middlewares/ST/STM32_USB_Device_Library)
 
 add_executable(${TARGET}
-    app/phase31_power_main.c
+    app/phase33_readonly_main.c
     app/dm4310_protocol.c
     app/dm4310_controller.c
     app/h6215_protocol.c

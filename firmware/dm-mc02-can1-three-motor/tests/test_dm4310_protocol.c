@@ -85,10 +85,45 @@ static void test_parameter_and_feedback_parsing(void)
     assert(!dm4310_parse_feedback(&feedback_frame, &feedback));
 }
 
+static void test_two_joint_addressing_is_isolated(void)
+{
+    Dm4310CanFrame request;
+    Dm4310ParameterResponse parameter_response;
+    Dm4310Feedback feedback;
+    Dm4310CanFrame parameter = {
+        .id = 3u,
+        .dlc = 8u,
+        .data = {6u, 0u, 0x33u, 10u, 1u, 0u, 0u, 0u},
+    };
+    Dm4310CanFrame feedback_frame = {
+        .id = 4u,
+        .dlc = 8u,
+        .data = {0x08u, 0x7fu, 0xffu, 0x7fu, 0xf7u, 0xffu, 30u, 29u},
+    };
+
+    assert(dm4310_build_feedback_request_for(6u, &request));
+    assert(request.id == 0x7ffu && request.data[0] == 6u);
+    assert(dm4310_build_read_request_for(8u, DM4310_REGISTER_T_MAX,
+                                         &request));
+    assert(request.data[0] == 8u && request.data[3] == 23u);
+    assert(!dm4310_build_feedback_request_for(16u, &request));
+    assert(dm4310_build_disable_command_for(6u, &request));
+    assert(request.id == 6u && request.data[7] == 0xfdu);
+
+    assert(dm4310_parse_parameter_response_for(
+        6u, 3u, &parameter, &parameter_response));
+    assert(!dm4310_parse_parameter_response_for(
+        8u, 4u, &parameter, &parameter_response));
+    assert(dm4310_parse_feedback_for(8u, 4u, &feedback_frame, &feedback));
+    assert(feedback.motor_id == 8u);
+    assert(!dm4310_parse_feedback_for(6u, 3u, &feedback_frame, &feedback));
+}
+
 int main(void)
 {
     test_system_and_read_frames();
     test_mit_known_vectors_and_bounds();
     test_parameter_and_feedback_parsing();
+    test_two_joint_addressing_is_isolated();
     return 0;
 }
