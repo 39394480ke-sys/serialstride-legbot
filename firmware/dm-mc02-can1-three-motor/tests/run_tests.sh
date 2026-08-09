@@ -94,3 +94,13 @@ cc -std=c11 -Wall -Wextra -Werror \
   -o "$dm4310_controller_out"
 
 "$dm4310_controller_out"
+
+parallel_controller_out="${TMPDIR:-/tmp}/dm-mc02-parallel-controller-tests"
+
+cc -std=c11 -Wall -Wextra -Werror \
+  -I"$root/app" \
+  "$root/tests/test_parallel_controller.c" \
+  "$root/app/parallel_controller.c" \
+  -o "$parallel_controller_out"
+
+"$parallel_controller_out"

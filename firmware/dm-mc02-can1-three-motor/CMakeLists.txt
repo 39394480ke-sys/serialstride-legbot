@@ -17,9 +17,9 @@ set(CMAKE_C_COMPILER "${STM32_TOOLCHAIN}/arm-none-eabi-gcc")
 set(CMAKE_ASM_COMPILER "${STM32_TOOLCHAIN}/arm-none-eabi-gcc")
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
-project(dm_mc02_phase34_three_motor_sequential C ASM)
+project(dm_mc02_phase35_three_motor_parallel C ASM)
 
-set(TARGET dm_mc02_phase34_three_motor_sequential)
+set(TARGET dm_mc02_phase35_three_motor_parallel)
 set(ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 set(HAL ${ROOT}/vendor/Drivers/STM32H7xx_HAL_Driver)
 set(CMSIS ${ROOT}/vendor/Drivers/CMSIS)
@@ -31,6 +31,7 @@ add_executable(${TARGET}
     app/dm4310_controller.c
     app/h6215_protocol.c
     app/motion_controller.c
+    app/parallel_controller.c
     app/motion_io.c
     app/phase1_monitor.c
     app/power_quiet_controller.c

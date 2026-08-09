@@ -10,6 +10,7 @@
 #include "main.h"
 #include "motion_io.h"
 #include "motion_controller.h"
+#include "parallel_controller.h"
 #include "phase1_monitor.h"
 #include "power_quiet_controller.h"
 #include "usb_command_queue.h"
@@ -63,6 +64,8 @@ static const uint8_t parameter_registers[] = {
     DM4310_REGISTER_V_MAX,
     DM4310_REGISTER_T_MAX,
 };
+
+static ParallelController parallel_motion;
 
 static bool enqueue_log(MotionLogQueue *queue, uint32_t *dropped_logs,
                         const char *record)
@@ -308,6 +311,7 @@ static void power_off(PowerQuietController *power, bool *probe_active,
     *probe_active = false;
     dm4310_controller_init(joint_motion);
     motion_controller_init(wheel_motion);
+    parallel_controller_init(&parallel_motion);
 }
 
 static void emergency_stop(MotorStatus motors[MOTOR_COUNT],
@@ -506,11 +510,13 @@ static bool any_motion_active(const Dm4310Controller *joint_motion,
                               const MotionController *wheel_motion)
 {
     return joint_motion_active(joint_motion) ||
-           wheel_motion_active(wheel_motion);
+           wheel_motion_active(wheel_motion) ||
+           parallel_controller_active(&parallel_motion);
 }
 
 static const char *unsafe_feedback(const MotorStatus motors[MOTOR_COUNT],
                                    MotorRole selected, bool motion_active,
+                                   bool parallel_active,
                                    uint32_t now_ms)
 {
     MotorRole role;
@@ -520,7 +526,8 @@ static const char *unsafe_feedback(const MotorStatus motors[MOTOR_COUNT],
 
         if (!online(motor, now_ms)) continue;
         if (motor->state != 0u &&
-            !(motion_active && role == selected && motor->state == 1u))
+            !(motion_active && (parallel_active || role == selected) &&
+              motor->state == 1u))
             return "MOTOR_NOT_DISABLED";
         if (motor->mos_temperature_c >= 60u ||
             motor->rotor_temperature_c >= 60u)
@@ -573,6 +580,139 @@ static MotionSafetySnapshot wheel_safety(
         .can_passive = !can_status_valid || can_status->error_passive,
         .can_bus_off = !can_status_valid || can_status->bus_off,
     };
+}
+
+static int32_t absolute(int32_t value)
+{
+    return value < 0 ? -value : value;
+}
+
+static ParallelSafetySnapshot parallel_safety(
+    const MotorStatus motors[MOTOR_COUNT], const Can1Status *can_status,
+    bool can_status_valid, bool probe_active, uint32_t now_ms)
+{
+    MotorRole role;
+    ParallelSafetySnapshot safety = {
+        .now_ms = now_ms,
+        .powered = board_motor_power_is_enabled(),
+        .probe_active = probe_active,
+        .parameters_valid = true,
+        .feedback_fresh = true,
+        .all_disabled = true,
+        .all_enabled = true,
+        .start_speed_zero = true,
+        .runtime_speed_safe = true,
+        .runtime_torque_safe = true,
+        .temperature_safe = true,
+        .can_active = can_status_valid && !can_status->warning &&
+                      !can_status->error_passive && !can_status->bus_off,
+        .state_normal = true,
+    };
+
+    for (role = MOTOR_JOINT_A; role < MOTOR_COUNT; ++role) {
+        const MotorStatus *motor = &motors[role];
+
+        safety.parameters_valid &= parameters_valid(motor, role);
+        safety.feedback_fresh &=
+            motor->feedback_valid && now_ms - motor->last_feedback_ms <= 100u;
+        safety.all_disabled &= motor->state == 0u;
+        safety.all_enabled &= motor->state == 1u;
+        safety.start_speed_zero &= absolute(motor->velocity_millirad_s) < 100;
+        safety.runtime_speed_safe &=
+            absolute(motor->velocity_millirad_s) <= 800;
+        if (role != MOTOR_WHEEL)
+            safety.runtime_torque_safe &=
+                absolute(motor->torque_millinewton_m) <= 500;
+        safety.temperature_safe &= motor->mos_temperature_c < 60u &&
+                                   motor->rotor_temperature_c < 60u;
+        safety.state_normal &= motor->state <= 1u;
+    }
+    return safety;
+}
+
+static bool send_enable_all(MotorStatus motors[MOTOR_COUNT])
+{
+    Dm4310CanFrame dm_frame;
+    H6215CanFrame wheel_frame;
+
+    return dm4310_build_enable_command_for(JOINT_A_ID, &dm_frame) &&
+           transmit(&motors[MOTOR_JOINT_A], dm_frame.id, dm_frame.data,
+                    dm_frame.dlc) &&
+           dm4310_build_enable_command_for(JOINT_B_ID, &dm_frame) &&
+           transmit(&motors[MOTOR_JOINT_B], dm_frame.id, dm_frame.data,
+                    dm_frame.dlc) &&
+           h6215_build_enable_command(&wheel_frame) &&
+           transmit(&motors[MOTOR_WHEEL], wheel_frame.id, wheel_frame.data,
+                    wheel_frame.dlc);
+}
+
+static bool send_velocity_all(MotorStatus motors[MOTOR_COUNT],
+                              int8_t direction)
+{
+    Dm4310CanFrame dm_frame;
+    H6215CanFrame wheel_frame;
+    int32_t joint_velocity = (int32_t)direction * 400;
+    int8_t wheel_step = (int8_t)(direction * 2);
+
+    return dm4310_build_mit_command_for(
+               JOINT_A_ID, 0, joint_velocity, 0, MIT_KD_MILLI, 0,
+               &dm_frame) &&
+           transmit(&motors[MOTOR_JOINT_A], dm_frame.id, dm_frame.data,
+                    dm_frame.dlc) &&
+           dm4310_build_mit_command_for(
+               JOINT_B_ID, 0, joint_velocity, 0, MIT_KD_MILLI, 0,
+               &dm_frame) &&
+           transmit(&motors[MOTOR_JOINT_B], dm_frame.id, dm_frame.data,
+                    dm_frame.dlc) &&
+           h6215_build_velocity_step(wheel_step, &wheel_frame) &&
+           transmit(&motors[MOTOR_WHEEL], wheel_frame.id, wheel_frame.data,
+                    wheel_frame.dlc);
+}
+
+static bool execute_parallel_decision(
+    ParallelDecision decision, MotorStatus motors[MOTOR_COUNT],
+    PowerQuietController *power, Dm4310Controller *joint_motion,
+    MotionController *wheel_motion, bool *probe_active,
+    MotionLogQueue *queue, uint32_t *dropped_logs)
+{
+    bool success = true;
+    char record[192];
+
+    if (decision.send_enable_all) success = send_enable_all(motors);
+    if (success && decision.send_velocity_all)
+        success = send_velocity_all(motors, decision.direction);
+    if (success && decision.send_disable_all)
+        success = send_disable_all(motors);
+    if (!success || decision.cut_power) {
+        (void)send_disable_all(motors);
+        power_off(power, probe_active, joint_motion, wheel_motion);
+    }
+    if (!success) {
+        (void)enqueue_log(queue, dropped_logs,
+                          "[PARALLEL_MOTION] EVENT=TX_FAILURE POWER_OFF\r\n");
+        return false;
+    }
+    if (decision.event != PARALLEL_EVENT_NONE) {
+        const char *event =
+            decision.event == PARALLEL_EVENT_ARMED ? "ARMED" :
+            decision.event == PARALLEL_EVENT_ENABLE_WAIT ? "ENABLE_WAIT" :
+            decision.event == PARALLEL_EVENT_RUNNING ? "RUNNING" :
+            decision.event == PARALLEL_EVENT_ZERO_HOLD ? "ZERO_HOLD" :
+            decision.event == PARALLEL_EVENT_DISABLE_WAIT ? "DISABLE_WAIT" :
+            decision.event == PARALLEL_EVENT_COMPLETE ? "COMPLETE" :
+            decision.event == PARALLEL_EVENT_REJECTED ? "REJECTED" :
+            decision.event == PARALLEL_EVENT_SAFETY_TRIP ? "SAFETY_TRIP" :
+            decision.event == PARALLEL_EVENT_ARM_TIMEOUT ? "ARM_TIMEOUT" :
+            "EVENT";
+
+        (void)snprintf(record, sizeof(record),
+                       "[PARALLEL_MOTION] EVENT=%s DIRECTION=%d%s%s\r\n",
+                       event, decision.direction,
+                       decision.reason != NULL ? " REASON=" : "",
+                       decision.reason != NULL ? decision.reason : "");
+        (void)enqueue_log(queue, dropped_logs, record);
+    }
+    return true;
 }
 
 static void enqueue_motion_log(MotionLogQueue *queue, uint32_t *dropped_logs,
@@ -692,6 +832,7 @@ int main(void)
     bool can1_ok;
     bool boot_queued = false;
     bool probe_active = false;
+    bool parallel_selected = false;
     MotorRole selected = MOTOR_COUNT;
     uint32_t next_telemetry_ms = BOOT_LOG_DELAY_MS + TELEMETRY_MS;
     uint32_t next_feedback_ms = 0u;
@@ -713,6 +854,7 @@ int main(void)
     power_quiet_controller_init(&power);
     dm4310_controller_init(&joint_motion);
     motion_controller_init(&wheel_motion);
+    parallel_controller_init(&parallel_motion);
     motion_log_queue_init(&log_queue);
     usb_command_queue_init();
     MX_USB_DEVICE_Init();
@@ -748,6 +890,7 @@ int main(void)
                 emergency_stop(motors, &power, &probe_active, &joint_motion,
                                &wheel_motion, &log_queue, &dropped_logs);
                 selected = MOTOR_COUNT;
+                parallel_selected = false;
                 continue;
             }
             if (command == (uint8_t)'S') {
@@ -806,8 +949,11 @@ int main(void)
                 }
                 continue;
             }
-            if (command >= (uint8_t)'1' && command <= (uint8_t)'3') {
-                MotorRole requested = (MotorRole)(command - (uint8_t)'1');
+            if (command >= (uint8_t)'1' && command <= (uint8_t)'4') {
+                MotorRole requested = command == (uint8_t)'4'
+                                          ? MOTOR_COUNT
+                                          : (MotorRole)(command -
+                                                        (uint8_t)'1');
 
                 if (!probe_active || any_motion_active(&joint_motion,
                                                        &wheel_motion)) {
@@ -817,24 +963,41 @@ int main(void)
                     (void)send_disable_all(motors);
                     dm4310_controller_init(&joint_motion);
                     motion_controller_init(&wheel_motion);
+                    parallel_controller_init(&parallel_motion);
                     selected = requested;
+                    parallel_selected = command == (uint8_t)'4';
                     {
                         char record[96];
 
-                        (void)snprintf(record, sizeof(record),
-                                       "MOTOR_SELECTED ROLE=%s ID=%u\r\n",
-                                       role_name(selected), role_id(selected));
+                        if (parallel_selected)
+                            (void)snprintf(record, sizeof(record),
+                                           "MOTOR_SELECTED ROLE=ALL COUNT=3\r\n");
+                        else
+                            (void)snprintf(record, sizeof(record),
+                                           "MOTOR_SELECTED ROLE=%s ID=%u\r\n",
+                                           role_name(selected),
+                                           role_id(selected));
                         (void)enqueue_log(&log_queue, &dropped_logs, record);
                     }
                 }
                 continue;
             }
-            if (selected == MOTOR_COUNT) {
+            if (!parallel_selected && selected == MOTOR_COUNT) {
                 (void)enqueue_log(&log_queue, &dropped_logs,
-                                  "MOTION_REJECTED REASON=SELECT_1_2_3_FIRST\r\n");
+                                  "MOTION_REJECTED REASON=SELECT_1_2_3_4_FIRST\r\n");
                 continue;
             }
-            if (selected == MOTOR_WHEEL) {
+            if (parallel_selected) {
+                ParallelSafetySnapshot safety = parallel_safety(
+                    motors, &can_status, can_status_valid, probe_active,
+                    now_ms);
+                ParallelDecision decision = parallel_controller_command(
+                    &parallel_motion, command, &safety);
+
+                (void)execute_parallel_decision(
+                    decision, motors, &power, &joint_motion, &wheel_motion,
+                    &probe_active, &log_queue, &dropped_logs);
+            } else if (selected == MOTOR_WHEEL) {
                 MotionSafetySnapshot safety = wheel_safety(
                     &motors[MOTOR_WHEEL], &can_status, can_status_valid,
                     now_ms);
@@ -896,11 +1059,23 @@ int main(void)
             }
         }
 
+        if (probe_active && parallel_selected) {
+            ParallelSafetySnapshot safety = parallel_safety(
+                motors, &can_status, can_status_valid, probe_active, now_ms);
+            ParallelDecision decision = parallel_controller_step(
+                &parallel_motion, &safety);
+
+            (void)execute_parallel_decision(
+                decision, motors, &power, &joint_motion, &wheel_motion,
+                &probe_active, &log_queue, &dropped_logs);
+        }
+
         if (probe_active && board_motor_power_is_enabled()) {
             if ((int32_t)(now_ms - next_feedback_ms) >= 0) {
                 next_feedback_ms = now_ms + FEEDBACK_SLOT_MS;
-                if (!((MotorRole)feedback_role == selected &&
-                      any_motion_active(&joint_motion, &wheel_motion)) &&
+                if (!(parallel_controller_active(&parallel_motion) ||
+                      ((MotorRole)feedback_role == selected &&
+                       any_motion_active(&joint_motion, &wheel_motion))) &&
                     !send_feedback_request(motors,
                                            (MotorRole)feedback_role)) {
                     power_off(&power, &probe_active, &joint_motion,
@@ -912,8 +1087,9 @@ int main(void)
             }
             if (probe_active && (int32_t)(now_ms - next_parameter_ms) >= 0) {
                 next_parameter_ms = now_ms + PARAMETER_SLOT_MS;
-                if (!((MotorRole)parameter_role == selected &&
-                      any_motion_active(&joint_motion, &wheel_motion)) &&
+                if (!(parallel_controller_active(&parallel_motion) ||
+                      ((MotorRole)parameter_role == selected &&
+                       any_motion_active(&joint_motion, &wheel_motion))) &&
                     !send_parameter_request(
                         motors, (MotorRole)parameter_role,
                         parameter_registers[parameter_index])) {
@@ -943,7 +1119,8 @@ int main(void)
         }
         feedback_fault = unsafe_feedback(
             motors, selected,
-            any_motion_active(&joint_motion, &wheel_motion), now_ms);
+            any_motion_active(&joint_motion, &wheel_motion),
+            parallel_controller_active(&parallel_motion), now_ms);
         if (probe_active && feedback_fault != NULL) {
             char record[128];
 
@@ -956,14 +1133,14 @@ int main(void)
 
         if (!boot_queued && now_ms >= BOOT_LOG_DELAY_MS) {
             const char *banner = can1_ok
-                ? "MC02_BOOT\r\nPHASE34_THREE_MOTOR_SEQUENTIAL\r\n"
+                ? "MC02_BOOT\r\nPHASE35_THREE_MOTOR_PARALLEL\r\n"
                   "CAN1_INIT_OK BITRATE=1000000 TX=GUARDED\r\n"
                   "JOINT_A ID=6 MST_ID=3\r\n"
                   "JOINT_B ID=8 MST_ID=4\r\n"
                   "WHEEL ID=1 MST_ID=0\r\n"
-                  "COMMANDS=S,A,P,R,1,2,3,N,G,B,X MOTION=ONE_AT_A_TIME\r\n"
+                  "COMMANDS=S,A,P,R,1,2,3,4,N,G,B,X MODE4=PARALLEL\r\n"
                   "DEFAULT_POWER=OFF DEFAULT_MOTORS=DISABLED\r\n"
-                : "MC02_BOOT\r\nPHASE34_THREE_MOTOR_SEQUENTIAL\r\n"
+                : "MC02_BOOT\r\nPHASE35_THREE_MOTOR_PARALLEL\r\n"
                   "CAN1_INIT_ERROR\r\nDEFAULT_POWER=OFF\r\n";
 
             boot_queued = enqueue_log(&log_queue, &dropped_logs, banner);
