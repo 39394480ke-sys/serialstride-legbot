@@ -17,18 +17,30 @@ set(CMAKE_C_COMPILER "${STM32_TOOLCHAIN}/arm-none-eabi-gcc")
 set(CMAKE_ASM_COMPILER "${STM32_TOOLCHAIN}/arm-none-eabi-gcc")
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
-project(dm_mc02_phase1 C ASM)
+project(dm_mc02_phase35_three_motor_parallel C ASM)
 
-set(TARGET dm_mc02_phase1)
+set(TARGET dm_mc02_phase35_three_motor_parallel)
 set(ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 set(HAL ${ROOT}/vendor/Drivers/STM32H7xx_HAL_Driver)
 set(CMSIS ${ROOT}/vendor/Drivers/CMSIS)
 set(USB ${ROOT}/vendor/Middlewares/ST/STM32_USB_Device_Library)
 
 add_executable(${TARGET}
-    app/main.c
-    app/h6215_protocol.c
+    app/three_motor_bringup/main.c
+    motors/dm4310/dm4310_protocol.c
+    motors/dm4310/dm4310_controller.c
+    motors/h6215/h6215_protocol.c
+    motors/h6215/motion_controller.c
+    motors/motor_manager/motor_manager.c
+    motors/motor_manager/parallel_controller.c
+    safety/safety_manager/safety_manager.c
+    drivers/can_bus/can_bus.c
+    drivers/can_bus/feedback_timing.c
+    drivers/uart/motion_io.c
+    drivers/uart/serial_logger.c
+    drivers/uart/usb_command_queue.c
     app/phase1_monitor.c
+    app/power_quiet_controller.c
     platform/src/board.c
     platform/src/gpio.c
     platform/src/stm32h7xx_hal_msp.c
@@ -63,6 +75,13 @@ add_executable(${TARGET}
 
 target_include_directories(${TARGET} PRIVATE
     app
+    app/three_motor_bringup
+    drivers/can_bus
+    drivers/uart
+    motors/dm4310
+    motors/h6215
+    motors/motor_manager
+    safety/safety_manager
     platform/inc
     platform/usb_device/App
     platform/usb_device/Target

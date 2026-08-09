@@ -1,17 +1,44 @@
 # DM-MC02 CAN1 three-motor firmware
 
 This directory is the firmware base for the single-side three-motor CAN1
-network. It contains the completed DM-MC02 Phase 1 bring-up and the Phase 2.1
-H6215 parameter/feedback probe. It does not contain enable, velocity, torque,
-or other motion commands.
+network. It contains the completed DM-MC02 bring-up and the guarded
+three-motor controls for two DM4310 joints and one H6215 wheel. Motion is off
+by default and every start requires an explicit arming command.
+
+## Architecture
+
+The active firmware is split by ownership rather than CAN ID branches in the
+application entry point:
+
+```text
+drivers/
+  can_bus/                 CAN transport and receive timing
+  uart/                    USB command queue and non-blocking serial logger
+motors/
+  dm4310/                  DM4310 protocol and single-motor controller
+  h6215/                   H6215 protocol and single-motor controller
+  motor_manager/           unified states, routing, group commands, parallel control
+safety/
+  safety_manager/          single and parallel safety snapshots and global trips
+app/
+  three_motor_bringup/     command orchestration and telemetry
+legacy/                    uncompiled historical bring-up entry points
+```
+
+`MotorState` is the single runtime representation for every motor. It owns
+the motor type and role, CAN/MST IDs, online state, feedback values and age,
+parameters, temperatures, and TX/RX counters. `MotorManager` is the only
+module that parses incoming device frames or emits group commands.
+`SafetyManager` derives controller snapshots from those unified states.
 
 ## Phase 1 behavior
 
 - STM32H723VGT6 clocked from the board's 24 MHz HSE at 480 MHz SYSCLK;
 - HAL SysTick provides the 1 kHz timebase;
-- USB CDC emits boot markers and 100 ms health records;
+- USB CDC emits boot markers and rate-limited health records;
 - FDCAN1 uses PD0/PD1 in classic CAN mode at 1 Mbps;
-- FDCAN1 starts in normal mode but transmits no frames;
+- FDCAN1 starts in normal mode and uses only the documented H6215 read,
+  feedback-probe, and guarded motion frames;
 - the application always boots in `DEFAULT_STATE=DISABLED`.
 
 Expected boot markers:
@@ -20,28 +47,53 @@ Expected boot markers:
 MC02_BOOT
 CLOCK_OK SYSCLK=480000000 HCLK=240000000
 TIMER_OK TICK_HZ=1000
-CAN1_INIT_OK BITRATE=1000000 TX=READ_AND_DISABLE_ONLY
-H6215_SAFE_PROBE CAN_ID=1 MST_ID=0 ENABLE=ABSENT MOTION=ABSENT DISABLE=ONCE
-MAIN_LOOP_RUNNING DEFAULT_STATE=DISABLED
+CAN1_INIT_OK BITRATE=1000000 TX=GUARDED_MOTION
+H6215_GUARDED_MOTION COMMANDS=S,A,G,B,C,+,-,0,K,X LIMIT=+/-0.500rad/s
+DEFAULT_STATE=DISABLED AUTO_MOTION=OFF
 ```
 
 ## Phase 2.1 behavior
 
 - polls software version, control mode, `P_MAX`, `V_MAX`, and `T_MAX` using
   the read-register opcode only;
-- waits until all five parameters are valid, then sends exactly one explicit
-  Disable command to request a feedback frame while enforcing zero output;
+- sends an explicit Disable feedback probe every 200 ms only while the guarded
+  controller is idle-disabled or armed and no recovery action is pending;
 - parses state, position, velocity, torque, MOS temperature, and rotor
   temperature;
-- never implements or sends Enable, velocity, torque, or position commands;
+- keeps the probe path limited to parameter reads and the feedback-producing
+  Disable command, with no catch-up probes after motion or fault states;
 - marks the wheel offline when no valid response is received for one second.
 
 Expected hardware status after the safe probe:
 
 ```text
-[WHEEL] ONLINE=1 ID=1 MST_ID=0 STATE=DISABLED SW=5406 MODE=3
+[WHEEL] ONLINE=1 ID=1 MST_ID=0 STATE=DISABLED FB_AGE_MS=1 SW=5406 MODE=3
 P_MAX=12.500 V_MAX=45.000 T_MAX=10.000 PARAM_MASK=0x1F
 ```
+
+## Guarded motion controls
+
+The current firmware accepts one ASCII command character at a time over USB
+CDC:
+
+- `S` requests all motor and CAN status;
+- while power is off, `A`, then `P`, enables VCC_OUT1 in quiet mode;
+- `R` starts the guarded three-device probe;
+- `1`, `2`, and `3` select JOINT_A, JOINT_B, and WHEEL respectively;
+- `4` selects all three motors for a bounded parallel test;
+- after selection, `A` opens a 10-second one-shot motion arm;
+- `G` and `B` request the bounded positive and negative tests;
+- `X` has a priority path that zeros and Disables all motors and turns
+  VCC_OUT1 off.
+
+Both bounded pulses send velocity commands for 1000 ms, hold zero for 200 ms,
+and then Disable. Continuous mode refreshes the command every 10 ms and ramps
+one `0.100rad/s` step per 100 ms. If no `+`, `-`, `0`, or `K` arrives for five
+seconds, it irreversibly ramps to zero, holds zero for 200 ms, and Disables.
+Feedback freshness, enabled state, `0.800rad/s` overspeed, 60 C temperature,
+CAN passive/bus-off, and transmit-failure checks remain active throughout.
+`X` uses a priority path independent of a full ordinary USB command queue.
+Parameter polling pauses while motion or fault shutdown is active.
 
 ## Build and test
 
@@ -58,9 +110,9 @@ cmake --build build
 The generated files are:
 
 ```text
-build/dm_mc02_phase1.elf
-build/dm_mc02_phase1.bin
-build/dm_mc02_phase1.map
+build/dm_mc02_phase35_three_motor_parallel.elf
+build/dm_mc02_phase35_three_motor_parallel.bin
+build/dm_mc02_phase35_three_motor_parallel.map
 ```
 
 ## Flash and observe
@@ -77,8 +129,28 @@ ComPort; its `/dev/cu.usbmodem*` suffix may change.
 screen /dev/cu.usbmodemXXXXXXXX 115200
 ```
 
-USB CDC ignores the selected baud rate, but `115200` keeps the command
-consistent with the earlier bench workflow.
+For [serial.baud-dance.com](https://serial.baud-dance.com/), use these exact
+settings:
+
+```text
+Port: STM32 Virtual ComPort (cu.usbmodem...)
+Baud rate: 115200
+Data bits: 8
+Parity: None
+Stop bits: 1
+Flow control: None / Off
+Receive format: ASCII
+Send format: ASCII
+HEX: Off
+Automatic send / Loop send: Off
+Line ending: None, CRLF, or LF
+```
+
+USB CDC does not actually depend on the selected baud rate; `115200` 8N1
+matches the prior F103 bench. Send one command character at a time: `S`, `A`,
+wait for `MOTION_ARMED EXPIRES_MS=10000`, then send exactly one of `G`, `B`, or
+`C`. In continuous mode, send `+`, `-`, `0`, or `K` as individual ASCII
+characters. A start command without a fresh `A` is rejected.
 
 ## Source provenance
 

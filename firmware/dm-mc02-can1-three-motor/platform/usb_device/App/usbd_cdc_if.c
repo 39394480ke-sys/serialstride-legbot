@@ -264,9 +264,10 @@ static int8_t CDC_Control_HS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 static int8_t CDC_Receive_HS(uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 11 */
+  usb_command_queue_push_from_isr(Buf, *Len);
   USBD_CDC_SetRxBuffer(&hUsbDeviceHS, &Buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceHS);
-  return (USBD_OK);
+  return USBD_OK;
   /* USER CODE END 11 */
 }
 
@@ -281,12 +282,20 @@ uint8_t CDC_Transmit_HS(uint8_t* Buf, uint16_t Len)
 {
   uint8_t result = USBD_OK;
   /* USER CODE BEGIN 12 */
+  uint32_t primask = __get_PRIMASK();
+  __disable_irq();
   USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceHS.pClassData;
-  if (hcdc->TxState != 0){
-    return USBD_BUSY;
+  if (hUsbDeviceHS.dev_state != USBD_STATE_CONFIGURED || hcdc == NULL) {
+    result = USBD_FAIL;
+  } else if (hcdc->TxState != 0) {
+    result = USBD_BUSY;
+  } else {
+    USBD_CDC_SetTxBuffer(&hUsbDeviceHS, Buf, Len);
+    result = USBD_CDC_TransmitPacket(&hUsbDeviceHS);
   }
-  USBD_CDC_SetTxBuffer(&hUsbDeviceHS, Buf, Len);
-  result = USBD_CDC_TransmitPacket(&hUsbDeviceHS);
+  if (primask == 0u) {
+    __enable_irq();
+  }
   /* USER CODE END 12 */
   return result;
 }

@@ -1,0 +1,314 @@
+{
+  "schema_version": 1,
+  "test": "DM-MC02/H6215 Phase 2.2a single guarded positive-velocity test",
+  "date": "2026-08-08",
+  "evidence_categories": {
+    "verified_telemetry_log_facts": "Directly present in the browser export's write/read records or in parsed telemetry lines.",
+    "user_observed_physical_behavior": "Human observation retained separately; it is not promoted to a protocol-to-mechanism mapping.",
+    "ai_tool_derived_inferences_metrics": "Metrics and interpretations calculated from the exported records with the interval definitions below.",
+    "unverified_pending": "Items not established by this capture and requiring a later controlled observation."
+  },
+  "provenance": {
+    "browser_export": {
+      "path": "records-2026-08-08-20-36-38.json",
+      "sha256": "8ad6837f73724f52b4ac15a4a9b6736b8beac2e20adc3dbd36b6840c0e23c0b4",
+      "record_count": 52,
+      "read_record_count": 50,
+      "write_record_count": 2,
+      "first_timestamp_local": "2026-08-08 20:36:26.865",
+      "last_timestamp_local": "2026-08-08 20:36:38.368"
+    },
+    "raw_read_stream": {
+      "archive_path": "docs/bring-up/dm-mc02/logs/phase2.2a-h6215-positive-2026-08-08.log.gz",
+      "uncompressed_bytes": 9489,
+      "uncompressed_sha256": "6569aee14c3dec288c6a12ca601b1f91bc27ef4d08560a6838508b2a147559d6",
+      "gzip_bytes": 842,
+      "gzip_sha256": "3510617e4f3ae4b0934832789bc9a2712ea2cdeb87d1d51e26e8ff82abe29888",
+      "extraction": "The 50 export records where type == read were selected in array order and their data strings were concatenated byte-for-byte. Write records, browser timestamps, and browser metadata remain in the source export and are not inserted into this device read stream.",
+      "commands": [
+        "jq -j '.[] | select(.type == \"read\") | .data' records-2026-08-08-20-36-38.json > /tmp/phase2.2a-h6215-positive-2026-08-08.log",
+        "gzip -n -c /tmp/phase2.2a-h6215-positive-2026-08-08.log > docs/bring-up/dm-mc02/logs/phase2.2a-h6215-positive-2026-08-08.log.gz"
+      ]
+    },
+    "controller_owned_live_post_motion_sample": {
+      "path": "/tmp/phase2.2a-h6215-post-motion-live-2026-08-08.log",
+      "sha256": "88a0371ad18a70a0e990d5577e9de9aa62125fa219e00bc0bff8b3b7a7716870",
+      "bytes": 3206,
+      "line_count": 16,
+      "capture_role": "Controller-owned read-only post-motion sampling after the completed physical test.",
+      "serial_command_bytes_sent": 0,
+      "external_can_or_motion_commands_sent": false,
+      "preservation_note": "The /tmp process file is not a committed artifact. Its hash, byte/line counts, capture metadata, eight exact parsed sample tuples, and summary below are committed so this evidence remains meaningful after process cleanup. It is intentionally not mixed into the browser raw-read gzip."
+    },
+    "firmware": {
+      "binary_path": "firmware/dm-mc02-can1-three-motor/build-phase22a/dm_mc02_phase1.bin",
+      "sha256": "feda2a98d16fb735204072b9728253bc79e72002edcf7d4b463b1e50fc418e79"
+    },
+    "serial_tool_settings": {
+      "port": "STM32 Virtual ComPort (cu.usbmodem...)",
+      "baud": 115200,
+      "data_bits": 8,
+      "parity": "None",
+      "stop_bits": 1,
+      "flow_control": "None / Off",
+      "receive_format": "ASCII",
+      "send_format": "ASCII",
+      "hex": false,
+      "automatic_send": false,
+      "loop_send": false,
+      "line_ending": "None (the captured write data is exactly a and g)"
+    }
+  },
+  "verified_telemetry_log_facts": {
+    "browser_writes": [
+      {
+        "timestamp_local": "2026-08-08 20:36:28.855",
+        "timestamp_ms": 1786192588855,
+        "data": "a",
+        "meaning": "Arm command recorded by the browser export."
+      },
+      {
+        "timestamp_local": "2026-08-08 20:36:34.166",
+        "timestamp_ms": 1786192594166,
+        "data": "g",
+        "meaning": "Guarded-start command recorded by the browser export."
+      }
+    ],
+    "firmware_markers": [
+      {
+        "timestamp_local": "2026-08-08 20:36:28.857",
+        "marker": "MOTION_ARMED EXPIRES_MS=10000"
+      },
+      {
+        "timestamp_local": "2026-08-08 20:36:34.166",
+        "markers": [
+          "MOTION_START_REQUESTED TARGET=+0.200rad/s",
+          "MOTOR_ENABLE_TX_OK",
+          "MOTION_RUNNING TARGET=+0.200rad/s DURATION_MS=1000"
+        ]
+      },
+      {
+        "timestamp_local": "2026-08-08 20:36:35.167",
+        "markers": [
+          "ZERO_SPEED_TX_OK",
+          "ZERO_SPEED_HOLD DURATION_MS=200"
+        ]
+      },
+      {
+        "timestamp_local": "2026-08-08 20:36:35.366",
+        "markers": [
+          "MOTOR_DISABLE_TX_OK",
+          "TEST_COMPLETE MOTOR_DISABLED"
+        ]
+      }
+    ],
+    "running_feedback": {
+      "sample_count": 10,
+      "sample_timestamps_local": {
+        "first": "2026-08-08 20:36:34.267",
+        "last": "2026-08-08 20:36:35.167"
+      },
+      "state": "ENABLED",
+      "velocity_rad_s": {
+        "min": 0.186,
+        "max": 0.186
+      },
+      "position_rad": {
+        "first": -0.164,
+        "last": 0.014
+      },
+      "torque_nm": {
+        "min": 0.007,
+        "max": 0.021
+      },
+      "mos_temperature_c": {
+        "min": 33,
+        "max": 33
+      },
+      "rotor_temperature_c": {
+        "min": 31,
+        "max": 31
+      }
+    },
+    "zero_hold_feedback": {
+      "sample_count": 2,
+      "sample_timestamps_local": {
+        "first": "2026-08-08 20:36:35.266",
+        "last": "2026-08-08 20:36:35.366"
+      },
+      "state": "ENABLED",
+      "velocity_rad_s": {
+        "min": -0.011,
+        "max": -0.011
+      }
+    },
+    "post_completion_disabled_feedback": {
+      "sample_count": 3,
+      "sample_timestamps_local": {
+        "first": "2026-08-08 20:36:36.367",
+        "last": "2026-08-08 20:36:38.368"
+      },
+      "state": "DISABLED",
+      "velocity_rad_s": {
+        "min": -0.011,
+        "max": -0.011
+      },
+      "position_rad": {
+        "min": 0.01,
+        "max": 0.01
+      },
+      "torque_nm": {
+        "min": -0.003,
+        "max": -0.003
+      },
+      "mos_temperature_c": {
+        "min": 33,
+        "max": 33
+      },
+      "rotor_temperature_c": {
+        "min": 31,
+        "max": 31
+      }
+    },
+    "final_can_and_scheduler_health": {
+      "timestamp_local": "2026-08-08 20:36:38.368",
+      "state": "DISABLED",
+      "rx": 1873,
+      "tx_ok": 1875,
+      "tx_fail": 0,
+      "can_recoveries": 0,
+      "missed": 0,
+      "can1_tec": 0,
+      "can1_rec": 0,
+      "can1_lec": 0,
+      "warning": 0,
+      "passive": 0,
+      "bus_off": 0
+    },
+    "captured_health_range": {
+      "health_line_count": 22,
+      "missed": [0, 0],
+      "can1_tec": [0, 0],
+      "can1_rec": [0, 0],
+      "warning": [0, 0],
+      "passive": [0, 0],
+      "bus_off": [0, 0],
+      "dropped_logs": [240, 240],
+      "absence_of_log_markers": ["SAFETY_TRIP", "TX_FAILURE"]
+    },
+    "controller_owned_live_post_motion_disabled_can_observation": {
+      "status": "satisfied",
+      "criterion": "Later controller-owned live observation of disabled state and CAN health after the completed test.",
+      "wheel_health_pair_count": 8,
+      "uptime_ms": {
+        "first": 2813552,
+        "last": 2820552,
+        "first_to_last_span": 7000
+      },
+      "wheel_common_fields": {
+        "online": 1,
+        "id": 1,
+        "master_id": 0,
+        "state": "DISABLED",
+        "feedback_age_ms": 199,
+        "software_version": "5406",
+        "control_mode": 3,
+        "parameter_mask": "0x1F",
+        "position_rad": -0.072,
+        "mos_temperature_c": 33,
+        "rotor_temperature_c": 31,
+        "disable_probe": 1,
+        "tx_fail": 0,
+        "can_recoveries": 0
+      },
+      "wheel_sample_tuples": [
+        {"uptime_ms": 2813552, "rx": 28233, "tx_ok": 28235, "velocity_rad_s": -0.011, "torque_nm": -0.003},
+        {"uptime_ms": 2814552, "rx": 28243, "tx_ok": 28245, "velocity_rad_s": -0.033, "torque_nm": -0.003},
+        {"uptime_ms": 2815552, "rx": 28253, "tx_ok": 28255, "velocity_rad_s": -0.011, "torque_nm": 0.002},
+        {"uptime_ms": 2816552, "rx": 28263, "tx_ok": 28265, "velocity_rad_s": -0.011, "torque_nm": 0.002},
+        {"uptime_ms": 2817552, "rx": 28273, "tx_ok": 28275, "velocity_rad_s": -0.011, "torque_nm": -0.003},
+        {"uptime_ms": 2818552, "rx": 28283, "tx_ok": 28285, "velocity_rad_s": -0.011, "torque_nm": -0.003},
+        {"uptime_ms": 2819552, "rx": 28293, "tx_ok": 28295, "velocity_rad_s": -0.011, "torque_nm": -0.003},
+        {"uptime_ms": 2820552, "rx": 28303, "tx_ok": 28305, "velocity_rad_s": -0.011, "torque_nm": -0.003}
+      ],
+      "wheel_ranges": {
+        "velocity_rad_s": [-0.033, -0.011],
+        "torque_nm": [-0.003, 0.002],
+        "rx": [28233, 28303],
+        "tx_ok": [28235, 28305]
+      },
+      "health_common_fields": {
+        "missed": 0,
+        "period_min_ms": 1,
+        "period_max_ms": 1,
+        "can1_tec": 0,
+        "can1_rec": 0,
+        "can1_lec": 0,
+        "warning": 0,
+        "passive": 0,
+        "bus_off": 0,
+        "dropped_logs": 269
+      },
+      "health_uptime_ms": [2813552, 2814552, 2815552, 2816552, 2817552, 2818552, 2819552, 2820552],
+      "interpretation_boundary": "This is a later seven-second controller-owned read-only observation, not a missing browser-window reconstruction and not a claim of uninterrupted observation from TEST_COMPLETE."
+    }
+  },
+  "user_observed_physical_behavior": {
+    "statement": "现在正常了 我看到电机逆时针转了",
+    "translation": "It is normal now; I saw the motor rotate counterclockwise.",
+    "reference_viewpoint_specified": false,
+    "protocol_positive_to_mechanism_direction_mapping_verified": false
+  },
+  "ai_tool_derived_inferences_metrics": {
+    "interval_definitions": {
+      "running_command_interval": "Browser timestamp of the coalesced MOTION_RUNNING marker (20:36:34.166) inclusive through the timestamp of the ZERO_SPEED_HOLD marker (20:36:35.167) exclusive.",
+      "running_feedback_interval": "All [WHEEL] samples with STATE=ENABLED from 20:36:34.267 through 20:36:35.167, inclusive; the last sample is in the record that also carries ZERO_SPEED_HOLD and therefore precedes that marker within the same read payload.",
+      "zero_hold_feedback_interval": "The two subsequent [WHEEL] STATE=ENABLED samples at 20:36:35.266 and 20:36:35.366, the latter sharing a read payload with TEST_COMPLETE.",
+      "post_completion_observation_interval": "Browser timestamp of TEST_COMPLETE (20:36:35.366) through the final exported record (20:36:38.368).",
+      "controller_owned_live_post_motion_interval": "Eight alternating WHEEL/HEALTH pairs with controller uptime_ms 2813552 through 2820552 inclusive; first-to-last span is 7000 ms."
+    },
+    "timing_ms": {
+      "motion_running_to_zero_speed_hold": 1001,
+      "zero_speed_hold_to_test_complete": 199,
+      "test_complete_to_final_exported_record": 3002,
+      "test_complete_to_first_disabled_feedback": 1001
+    },
+    "position_delta_rad": {
+      "running_feedback_first_to_last": 0.178,
+      "last_disabled_before_g_to_first_disabled_after_completion": 0.188,
+      "definition_note": "The first value uses only the defined running-feedback samples. The second uses P=-0.178 at 20:36:33.866 and P=+0.010 at 20:36:36.367, so it also includes unsampled enable/settling portions."
+    },
+    "all_captured_wheel_telemetry_ranges": {
+      "velocity_rad_s": [-0.011, 0.186],
+      "position_rad": [-0.178, 0.015],
+      "torque_nm": [-0.003, 0.021],
+      "mos_temperature_c": [33, 33],
+      "rotor_temperature_c": [31, 31]
+    },
+    "completion_assessment": "The logged automatic sequence and final disabled/CAN telemetry support a successful bounded positive test. The browser export itself still lacks a full five-second post-completion window, but the later controller-owned read-only sample independently provides a seven-second disabled/CAN-healthy observation with no serial command bytes or external CAN/motion commands sent. The constant browser dropped_logs=240 was already present before A/G and is consistent with strict CDC drop-on-no-listener semantics; it is not classified as a motion fault.",
+    "procedural_variance_ruling": {
+      "s_write_present_in_this_browser_export": false,
+      "status": "non-load-bearing procedural variance",
+      "ruling": "The absent prescribed initial S write does not invalidate the accepted guarded-motion outcome.",
+      "basis": [
+        "The same browser export contains repeated pre-A/G STATE=DISABLED, near-zero-velocity, CAN-healthy telemetry.",
+        "Task 5 separately validated the exact S command path."
+      ],
+      "boundary": "This ruling does not invent an S write or claim that S was sent in this export."
+    }
+  },
+  "unverified_pending": {
+    "five_second_post_completion_browser_observation": {
+      "status": "not_fully_captured",
+      "captured_ms": 3002,
+      "required_ms": 5000,
+      "shortfall_ms": 1998,
+      "resolution": "Browser-only continuity remains unavailable and is retained as an export limitation. This is not a pending live-sampling criterion: the separate controller-owned seven-second sample satisfies the later live disabled/CAN observation, with its distinct interval documented above."
+    },
+    "protocol_positive_to_physical_direction_mapping": "Unverified because the user did not specify a viewpoint or mechanism reference side.",
+    "negative_motion": "Unverified and not implemented.",
+    "continuous_motion": "Unverified and not implemented.",
+    "idle_x_stop_path_in_this_export": "Not exercised by this capture.",
+    "safe_idle_s_command_in_this_export": "No S write record is present in this export. It remains absent/unverified here; see the explicit non-load-bearing procedural-variance ruling above."
+  }
+}

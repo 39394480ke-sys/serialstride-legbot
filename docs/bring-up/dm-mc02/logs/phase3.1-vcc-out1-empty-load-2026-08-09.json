@@ -1,0 +1,35 @@
+{
+  "date": "2026-08-09",
+  "phase": "Phase 3.1 VCC_OUT1 empty-load safety checkpoint",
+  "firmware_commit": "5a8ba79",
+  "firmware_sha256": "c7890a6a6886b65db41d53d58deefc06b587077d31a0e99257244beba5d551ea",
+  "hardware_state": {
+    "motor_connected": false,
+    "input_voltage_v": 24
+  },
+  "flash": {
+    "tool": "STM32CubeProgrammer 2.20.0",
+    "address": "0x08000000",
+    "download_verified": true,
+    "reset_succeeded": true
+  },
+  "software": {
+    "commands": ["S", "A", "P", "X"],
+    "can_tx_frames": 0,
+    "power_on_requires_arm": true,
+    "arm_window_ms": 10000,
+    "default_power": "OFF"
+  },
+  "user_measurements_v": {
+    "initial_off": 0.02,
+    "after_arm_and_power_on": 24,
+    "after_emergency_x": 0
+  },
+  "verified": {
+    "host_tests": true,
+    "clean_arm_build": true,
+    "git_diff_check": true,
+    "empty_load_off_on_off": true,
+    "powered_quiet_can_tx_zero": true
+  }
+}

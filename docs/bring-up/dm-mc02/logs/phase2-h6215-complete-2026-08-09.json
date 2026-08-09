@@ -1,0 +1,73 @@
+{
+  "date": "2026-08-09",
+  "phase": "Phase 2 complete H6215 migration",
+  "firmware_commit": "3dc2464",
+  "firmware_sha256": "514106d11e02f69f05824df70d8851fdb008896c98d1c2373a08ad97bef206d9",
+  "flash": {
+    "tool": "STM32CubeProgrammer 2.20.0",
+    "address": "0x08000000",
+    "download_verified": true,
+    "reset_succeeded": true
+  },
+  "hardware": {
+    "can_bitrate_bps": 1000000,
+    "can_id": 1,
+    "master_id": 0,
+    "software_version": "5406",
+    "control_mode": 3,
+    "parameter_mask": "0x1F"
+  },
+  "negative_pulse": {
+    "attempts": 3,
+    "command_target_rad_s": -0.2,
+    "observed_feedback_rad_s": -0.209,
+    "duration_ms": 1000,
+    "zero_hold_ms": 200,
+    "automatic_disable": true
+  },
+  "continuous": {
+    "limit_rad_s": 0.5,
+    "ramp_step_rad_s": 0.1,
+    "ramp_period_ms": 100,
+    "positive_feedback_rad_s": 0.494,
+    "negative_feedback_rad_s": -0.517,
+    "positive_clamp_verified": true,
+    "manual_zero_verified": true,
+    "keepalive_verified": true,
+    "watchdog_timeout_ms": 5000,
+    "watchdog_zero_hold_ms": 200,
+    "watchdog_disable_verified": true,
+    "emergency_x_verified": true
+  },
+  "user_observation": {
+    "positive_direction": "counterclockwise",
+    "negative_direction": "clockwise",
+    "scope": "current bench and viewing side"
+  },
+  "idle_soak": {
+    "requested_duration_s": 1800,
+    "wheel_samples": 1800,
+    "health_samples": 1800,
+    "first_uptime_ms": 645406,
+    "last_uptime_ms": 2444406,
+    "bad_samples": 0,
+    "resets": 0,
+    "tx_fail_delta": 0,
+    "max_mos_temperature_c": 30,
+    "max_rotor_temperature_c": 28
+  },
+  "verified": {
+    "host_tests": true,
+    "clean_arm_build": true,
+    "hardware_forward_reverse": true,
+    "hardware_ramp_and_limit": true,
+    "hardware_watchdog": true,
+    "hardware_emergency_stop": true,
+    "can_warning_passive_bus_off_during_motion": false
+  },
+  "not_hardware_fault_injected": [
+    "overtemperature",
+    "overspeed",
+    "usb_disconnect_during_active_motion"
+  ]
+}
