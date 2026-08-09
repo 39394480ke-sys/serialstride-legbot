@@ -10,16 +10,16 @@ static void test_system_and_read_frames(void)
     Dm4310CanFrame frame;
 
     assert(dm4310_build_enable_command(&frame));
-    assert(frame.id == 6u && frame.dlc == 8u && frame.data[7] == 0xfcu);
+    assert(frame.id == 8u && frame.dlc == 8u && frame.data[7] == 0xfcu);
     for (uint8_t index = 0u; index < 7u; ++index) assert(frame.data[index] == 0xffu);
     assert(dm4310_build_disable_command(&frame));
     assert(frame.data[7] == 0xfdu);
 
     assert(dm4310_build_feedback_request(&frame));
-    assert(frame.id == 0x7ffu && frame.data[0] == 6u &&
+    assert(frame.id == 0x7ffu && frame.data[0] == 8u &&
            frame.data[2] == 0xccu);
     assert(dm4310_build_read_request(DM4310_REGISTER_V_MAX, &frame));
-    assert(frame.id == 0x7ffu && frame.data[0] == 6u &&
+    assert(frame.id == 0x7ffu && frame.data[0] == 8u &&
            frame.data[2] == 0x33u && frame.data[3] == 22u);
     assert(!dm4310_build_read_request(0xffu, &frame));
 }
@@ -32,7 +32,7 @@ static void test_mit_known_vectors_and_bounds(void)
     };
 
     assert(dm4310_build_mit_command(0, 0, 0, 500, 0, &frame));
-    assert(frame.id == 6u && frame.dlc == 8u);
+    assert(frame.id == 8u && frame.dlc == 8u);
     assert(memcmp(frame.data, zero_expected, sizeof(zero_expected)) == 0);
 
     assert(dm4310_build_mit_command(0, 200, 0, 500, 0, &frame));
@@ -53,15 +53,15 @@ static void test_mit_known_vectors_and_bounds(void)
 static void test_parameter_and_feedback_parsing(void)
 {
     Dm4310CanFrame parameter = {
-        .id = 3u,
+        .id = 4u,
         .dlc = 8u,
-        .data = {6u, 0u, 0x33u, 21u, 0x00u, 0x00u, 0x48u, 0x41u},
+        .data = {8u, 0u, 0x33u, 21u, 0x00u, 0x00u, 0x48u, 0x41u},
     };
     Dm4310ParameterResponse response;
     Dm4310CanFrame feedback_frame = {
-        .id = 3u,
+        .id = 4u,
         .dlc = 8u,
-        .data = {0x16u, 0x7fu, 0xffu, 0x7fu, 0xf7u, 0xffu, 31u, 29u},
+        .data = {0x18u, 0x7fu, 0xffu, 0x7fu, 0xf7u, 0xffu, 31u, 29u},
     };
     Dm4310Feedback feedback;
 
@@ -70,7 +70,7 @@ static void test_parameter_and_feedback_parsing(void)
     assert(fabsf(response.float_value - 12.5f) < 0.001f);
 
     assert(dm4310_parse_feedback(&feedback_frame, &feedback));
-    assert(feedback.motor_id == 6u && feedback.state == 1u);
+    assert(feedback.motor_id == 8u && feedback.state == 1u);
     assert(feedback.position_millirad >= -2 && feedback.position_millirad <= 0);
     assert(feedback.velocity_millirad_s >= -10 &&
            feedback.velocity_millirad_s <= 0);
@@ -79,7 +79,7 @@ static void test_parameter_and_feedback_parsing(void)
     assert(feedback.mos_temperature_c == 31u);
     assert(feedback.rotor_temperature_c == 29u);
 
-    parameter.id = 4u;
+    parameter.id = 3u;
     assert(!dm4310_parse_parameter_response(&parameter, &response));
     feedback_frame.data[0] = 0x15u;
     assert(!dm4310_parse_feedback(&feedback_frame, &feedback));

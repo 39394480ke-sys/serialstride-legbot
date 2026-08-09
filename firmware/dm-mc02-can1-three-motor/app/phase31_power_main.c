@@ -233,11 +233,11 @@ static void enqueue_joint_status(MotionLogQueue *queue,
     (void)snprintf(
         record, sizeof(record),
         "%s[POWER] VCC_OUT1=%s MODE=%s\r\n"
-        "[JOINT_A] ONLINE=%u ID=6 MST_ID=3 STATE=%s FB_AGE_MS=%s "
+        "[JOINT_B] ONLINE=%u ID=8 MST_ID=4 STATE=%s FB_AGE_MS=%s "
         "SW=%s MODE=%u P_MAX=%s V_MAX=%s T_MAX=%s PARAM_MASK=0x%02X "
         "PARAM_OK=%u PROBE=%u RX=%lu P=%s V=%s T=%s TMOS=%u "
         "TROTOR=%u TX_OK=%lu TX_FAIL=%lu\r\n"
-        "[JOINT_A_MOTION] STATE=%s TARGET=%ld.%03ld\r\n",
+        "[JOINT_B_MOTION] STATE=%s TARGET=%ld.%03ld\r\n",
         status_requested ? "STATUS_REQUESTED\r\n" : "",
         board_motor_power_is_enabled() ? "ON" : "OFF",
         probe_active ? "ACTIVE" : "QUIET", online,
@@ -322,7 +322,7 @@ static void enqueue_motion_event(MotionLogQueue *queue,
     case DM4310_EVENT_ARM_TIMEOUT: format = "ARM_TIMEOUT\r\n"; break;
     case DM4310_EVENT_ENABLE_REQUESTED:
         (void)snprintf(record, sizeof(record),
-                       "[JOINT_A_MOTION] STATE=ENABLE_WAIT TARGET=%ld.%03ld\r\n",
+                       "[JOINT_B_MOTION] STATE=ENABLE_WAIT TARGET=%ld.%03ld\r\n",
                        (long)(decision->target_velocity_millirad_s / 1000),
                        (long)(decision->target_velocity_millirad_s < 0
                                   ? -(decision->target_velocity_millirad_s % 1000)
@@ -331,7 +331,7 @@ static void enqueue_motion_event(MotionLogQueue *queue,
         break;
     case DM4310_EVENT_RUNNING:
         (void)snprintf(record, sizeof(record),
-                       "[JOINT_A_MOTION] STATE=PULSE TARGET=%ld.%03ld DURATION_MS=%u\r\n",
+                       "[JOINT_B_MOTION] STATE=PULSE TARGET=%ld.%03ld DURATION_MS=%u\r\n",
                        (long)(decision->target_velocity_millirad_s / 1000),
                        (long)(decision->target_velocity_millirad_s < 0
                                   ? -(decision->target_velocity_millirad_s % 1000)
@@ -340,10 +340,10 @@ static void enqueue_motion_event(MotionLogQueue *queue,
         format = record;
         break;
     case DM4310_EVENT_ZERO_HOLD:
-        format = "[JOINT_A_MOTION] STATE=ZERO_HOLD TARGET=0.000 DURATION_MS=200\r\n";
+        format = "[JOINT_B_MOTION] STATE=ZERO_HOLD TARGET=0.000 DURATION_MS=200\r\n";
         break;
     case DM4310_EVENT_COMPLETE:
-        format = "[JOINT_A_MOTION] STATE=DISABLED TARGET=0.000 COMPLETE=1\r\n";
+        format = "[JOINT_B_MOTION] STATE=DISABLED TARGET=0.000 COMPLETE=1\r\n";
         break;
     case DM4310_EVENT_EMERGENCY_STOP:
         format = "EMERGENCY_STOP_REQUESTED POWER_OFF\r\n";
@@ -523,7 +523,7 @@ int main(void)
                     next_feedback_poll_ms = now_ms;
                     next_parameter_poll_ms = now_ms;
                     (void)enqueue_log(&log_queue, &dropped_logs,
-                                      "READ_ONLY_PROBE_STARTED ID=6 MST_ID=3\r\n");
+                                      "READ_ONLY_PROBE_STARTED ID=8 MST_ID=4\r\n");
                 }
                 continue;
             }
@@ -625,12 +625,12 @@ int main(void)
 
         if (!boot_queued && now_ms >= BOOT_LOG_DELAY_MS) {
             const char *banner = can1_ok
-                ? "MC02_BOOT\r\nPHASE31_JOINT_A_GUARDED\r\n"
+                ? "MC02_BOOT\r\nPHASE32_JOINT_B_GUARDED\r\n"
                   "CAN1_INIT_OK BITRATE=1000000 TX=GUARDED\r\n"
-                  "JOINT_A ID=6 MST_ID=3 MODE=MIT COMMANDS=S,A,P,R,N,G,B,X\r\n"
+                  "JOINT_B ID=8 MST_ID=4 MODE=MIT COMMANDS=S,A,P,R,N,G,B,X\r\n"
                   "MIT_GAINS KP=0.0 KD=1.0 TORQUE_LIMIT=0.5Nm\r\n"
                   "DEFAULT_POWER=OFF DEFAULT_MOTOR=DISABLED\r\n"
-                : "MC02_BOOT\r\nPHASE31_JOINT_A_GUARDED\r\n"
+                : "MC02_BOOT\r\nPHASE32_JOINT_B_GUARDED\r\n"
                   "CAN1_INIT_ERROR\r\nDEFAULT_POWER=OFF\r\n";
 
             boot_queued = enqueue_log(&log_queue, &dropped_logs, banner);

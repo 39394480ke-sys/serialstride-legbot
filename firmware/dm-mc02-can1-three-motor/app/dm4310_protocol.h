@@ -4,8 +4,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define DM4310_CAN_ID 6u
-#define DM4310_MASTER_ID 3u
+#define DM4310_CAN_ID 8u
+#define DM4310_MASTER_ID 4u
 #define DM4310_P_MAX_MILLIRAD 12500
 #define DM4310_V_MAX_MILLIRAD_S 30000
 #define DM4310_T_MAX_MILLINEWTON_M 10000
