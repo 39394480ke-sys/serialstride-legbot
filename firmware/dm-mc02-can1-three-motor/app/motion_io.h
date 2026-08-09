@@ -23,6 +23,7 @@ typedef struct {
 
 typedef struct {
     MotionAction action;
+    int8_t velocity_step;
 } PendingMotionAction;
 
 typedef struct {
@@ -51,11 +52,14 @@ bool motion_feedback_probe_should_send(
 
 void pending_motion_action_init(PendingMotionAction *pending);
 bool pending_motion_action_has_value(const PendingMotionAction *pending);
-MotionAction pending_motion_action_begin_attempt(
-    const PendingMotionAction *pending);
+MotionAction pending_motion_action_begin_attempt(const PendingMotionAction *pending);
+MotionDecision pending_motion_decision_begin_attempt(const PendingMotionAction *pending);
 void pending_motion_action_succeeded(PendingMotionAction *pending);
 void pending_motion_action_failed(PendingMotionAction *pending,
                                   MotionAction attempted,
                                   MotionAction recovery);
+void pending_motion_decision_failed(PendingMotionAction *pending,
+                                    MotionDecision attempted,
+                                    MotionDecision recovery);
 
 #endif

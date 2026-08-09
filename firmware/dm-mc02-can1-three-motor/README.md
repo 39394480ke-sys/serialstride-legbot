@@ -1,18 +1,18 @@
 # DM-MC02 CAN1 three-motor firmware
 
 This directory is the firmware base for the single-side three-motor CAN1
-network. It contains the completed DM-MC02 Phase 1 bring-up and the Phase 2.1
-H6215 parameter/feedback probe, plus the Phase 2.2a guarded positive-velocity
-test. Motion is off by default and is available only through the explicit
-`A`, then `G`, serial command sequence.
+network. It contains the completed DM-MC02 Phase 1 bring-up, the Phase 2.1
+H6215 parameter/feedback probe, and the guarded Phase 2 motion controls.
+Motion is off by default and every start requires an explicit arming command.
 
 ## Phase 1 behavior
 
 - STM32H723VGT6 clocked from the board's 24 MHz HSE at 480 MHz SYSCLK;
 - HAL SysTick provides the 1 kHz timebase;
-- USB CDC emits boot markers and 100 ms health records;
+- USB CDC emits boot markers and rate-limited health records;
 - FDCAN1 uses PD0/PD1 in classic CAN mode at 1 Mbps;
-- FDCAN1 starts in normal mode but transmits no frames;
+- FDCAN1 starts in normal mode and uses only the documented H6215 read,
+  feedback-probe, and guarded motion frames;
 - the application always boots in `DEFAULT_STATE=DISABLED`.
 
 Expected boot markers:
@@ -22,7 +22,7 @@ MC02_BOOT
 CLOCK_OK SYSCLK=480000000 HCLK=240000000
 TIMER_OK TICK_HZ=1000
 CAN1_INIT_OK BITRATE=1000000 TX=GUARDED_MOTION
-H6215_GUARDED_MOTION COMMANDS=S,A,G,X TARGET=+0.200rad/s
+H6215_GUARDED_MOTION COMMANDS=S,A,G,B,C,+,-,0,K,X LIMIT=+/-0.500rad/s
 DEFAULT_STATE=DISABLED AUTO_MOTION=OFF
 ```
 
@@ -45,7 +45,7 @@ Expected hardware status after the safe probe:
 P_MAX=12.500 V_MAX=45.000 T_MAX=10.000 PARAM_MASK=0x1F
 ```
 
-## Phase 2.2a guarded motion test
+## Guarded motion controls
 
 The firmware accepts one ASCII command character at a time over USB CDC:
 
@@ -53,16 +53,20 @@ The firmware accepts one ASCII command character at a time over USB CDC:
 - `A` opens a 10-second arming window;
 - `G` requests the guarded `+0.200rad/s` test only while freshly armed and
   while all safety checks pass;
+- `B` requests the equivalent `-0.200rad/s` pulse;
+- `C` starts continuous mode at zero speed;
+- in continuous mode, `+` and `-` change the target by `0.100rad/s`, clamped
+  to `+/-0.500rad/s`; `0` selects zero and `K` refreshes the watchdog;
 - `X` requests an immediate zero-speed and Disable shutdown.
 
-The bounded test sends positive velocity commands for 1000 ms, holds zero
-speed for 200 ms, and then sends Disable. Enable, positive velocity, zero
-velocity, and Disable are the only motion-path CAN actions. Parameter polling
-pauses while motion or fault shutdown is active so it cannot contend with the
-10 ms control frames. A CAN transmit failure enters the controller's zero and
-Disable recovery path. An idle feedback-probe transmit failure is counted but
-does not enter that motion-fault path; a later `G` still requires fresh
-feedback and active CAN. `G` without a fresh `A` is rejected.
+Both bounded pulses send velocity commands for 1000 ms, hold zero for 200 ms,
+and then Disable. Continuous mode refreshes the command every 10 ms and ramps
+one `0.100rad/s` step per 100 ms. If no `+`, `-`, `0`, or `K` arrives for five
+seconds, it irreversibly ramps to zero, holds zero for 200 ms, and Disables.
+Feedback freshness, enabled state, `0.800rad/s` overspeed, 60 C temperature,
+CAN passive/bus-off, and transmit-failure checks remain active throughout.
+`X` uses a priority path independent of a full ordinary USB command queue.
+Parameter polling pauses while motion or fault shutdown is active.
 
 ## Build and test
 
@@ -117,8 +121,9 @@ Line ending: None, CRLF, or LF
 
 USB CDC does not actually depend on the selected baud rate; `115200` 8N1
 matches the prior F103 bench. Send one command character at a time: `S`, `A`,
-wait for `MOTION_ARMED EXPIRES_MS=10000`, then `G`. `G` without a fresh `A` is
-rejected.
+wait for `MOTION_ARMED EXPIRES_MS=10000`, then send exactly one of `G`, `B`, or
+`C`. In continuous mode, send `+`, `-`, `0`, or `K` as individual ASCII
+characters. A start command without a fresh `A` is rejected.
 
 ## Source provenance
 

@@ -129,6 +129,7 @@ void pending_motion_action_init(PendingMotionAction *pending)
 {
     if (pending != NULL) {
         pending->action = MOTION_ACTION_NONE;
+        pending->velocity_step = 0;
     }
 }
 
@@ -137,16 +138,26 @@ bool pending_motion_action_has_value(const PendingMotionAction *pending)
     return pending != NULL && pending->action != MOTION_ACTION_NONE;
 }
 
-MotionAction pending_motion_action_begin_attempt(
-    const PendingMotionAction *pending)
+MotionAction pending_motion_action_begin_attempt(const PendingMotionAction *pending)
 {
     return pending != NULL ? pending->action : MOTION_ACTION_NONE;
+}
+
+MotionDecision pending_motion_decision_begin_attempt(const PendingMotionAction *pending)
+{
+    MotionDecision result = {0};
+    if (pending != NULL) {
+        result.action = pending->action;
+        result.velocity_step = pending->velocity_step;
+    }
+    return result;
 }
 
 void pending_motion_action_succeeded(PendingMotionAction *pending)
 {
     if (pending != NULL) {
         pending->action = MOTION_ACTION_NONE;
+        pending->velocity_step = 0;
     }
 }
 
@@ -154,8 +165,25 @@ void pending_motion_action_failed(PendingMotionAction *pending,
                                   MotionAction attempted,
                                   MotionAction recovery)
 {
+    MotionDecision attempted_decision = {.action = attempted};
+    MotionDecision recovery_decision = {.action = recovery};
+
+    pending_motion_decision_failed(pending, attempted_decision,
+                                   recovery_decision);
+}
+
+void pending_motion_decision_failed(PendingMotionAction *pending,
+                                    MotionDecision attempted,
+                                    MotionDecision recovery)
+{
     if (pending == NULL) {
         return;
     }
-    pending->action = recovery != MOTION_ACTION_NONE ? recovery : attempted;
+    if (recovery.action != MOTION_ACTION_NONE) {
+        pending->action = recovery.action;
+        pending->velocity_step = recovery.velocity_step;
+    } else {
+        pending->action = attempted.action;
+        pending->velocity_step = attempted.velocity_step;
+    }
 }

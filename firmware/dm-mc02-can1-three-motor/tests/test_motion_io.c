@@ -126,6 +126,22 @@ static void test_failed_action_without_replacement_is_retried(void)
            MOTION_ACTION_ZERO_VELOCITY);
 }
 
+static void test_pending_velocity_retry_preserves_exact_step(void)
+{
+    PendingMotionAction pending;
+    MotionDecision attempted = {
+        .action = MOTION_ACTION_VELOCITY,
+        .velocity_step = -4,
+    };
+    MotionDecision retry;
+
+    pending_motion_action_init(&pending);
+    pending_motion_decision_failed(&pending, attempted, (MotionDecision){0});
+    retry = pending_motion_decision_begin_attempt(&pending);
+    assert(retry.action == MOTION_ACTION_VELOCITY);
+    assert(retry.velocity_step == -4);
+}
+
 static void test_disable_returned_after_recovery_failure_stays_pending(void)
 {
     MotionController controller;
@@ -155,6 +171,8 @@ static void test_telemetry_cadence_matches_motion_activity(void)
     static const MotionState active_states[] = {
         MOTION_ENABLE_WAIT,
         MOTION_RUNNING,
+        MOTION_CONTINUOUS,
+        MOTION_WATCHDOG_RAMP,
         MOTION_ZERO_HOLD,
         MOTION_FAULT_ZERO,
         MOTION_FAULT_DISABLE,
@@ -219,6 +237,8 @@ static void test_feedback_probe_never_runs_in_active_or_fault_states(void)
     static const MotionState prohibited_states[] = {
         MOTION_ENABLE_WAIT,
         MOTION_RUNNING,
+        MOTION_CONTINUOUS,
+        MOTION_WATCHDOG_RAMP,
         MOTION_ZERO_HOLD,
         MOTION_FAULT_ZERO,
         MOTION_FAULT_DISABLE,
@@ -299,6 +319,7 @@ int main(void)
     test_submission_attempt_always_removes_head_and_counts_rejection();
     test_pending_action_remains_owned_until_success();
     test_failed_action_without_replacement_is_retried();
+    test_pending_velocity_retry_preserves_exact_step();
     test_disable_returned_after_recovery_failure_stays_pending();
     test_telemetry_cadence_matches_motion_activity();
     test_telemetry_cadence_transition_reschedules_both_timers();

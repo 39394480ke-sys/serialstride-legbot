@@ -105,14 +105,14 @@ static bool enqueue_boot_banner(bool can1_ok, MotionLogQueue *queue,
         "CLOCK_OK SYSCLK=480000000 HCLK=240000000\r\n"
         "TIMER_OK TICK_HZ=1000\r\n"
         "CAN1_INIT_OK BITRATE=1000000 TX=GUARDED_MOTION\r\n"
-        "H6215_GUARDED_MOTION COMMANDS=S,A,G,X TARGET=+0.200rad/s\r\n"
+        "H6215_GUARDED_MOTION COMMANDS=S,A,G,B,C,+,-,0,K,X LIMIT=+/-0.500rad/s\r\n"
         "DEFAULT_STATE=DISABLED AUTO_MOTION=OFF\r\n";
     static const char failure_banner[] =
         "MC02_BOOT\r\n"
         "CLOCK_OK SYSCLK=480000000 HCLK=240000000\r\n"
         "TIMER_OK TICK_HZ=1000\r\n"
         "CAN1_INIT_ERROR\r\n"
-        "H6215_GUARDED_MOTION COMMANDS=S,A,G,X TARGET=+0.200rad/s\r\n"
+        "H6215_GUARDED_MOTION COMMANDS=S,A,G,B,C,+,-,0,K,X LIMIT=+/-0.500rad/s\r\n"
         "DEFAULT_STATE=DISABLED AUTO_MOTION=OFF\r\n";
     const char *message = can1_ok ? banner : failure_banner;
     size_t length = can1_ok ? sizeof(banner) - 1u
@@ -339,6 +339,31 @@ static int format_diagnostics(char *buffer, size_t capacity,
     return length;
 }
 
+static int format_motion_status(char *buffer, size_t capacity,
+                                const MotionController *motion,
+                                uint32_t now_ms)
+{
+    char current[16];
+    char target[16];
+    char watchdog_age[16];
+
+    format_milli(current, sizeof(current), motion->current_step * 100);
+    format_milli(target, sizeof(target), motion->target_step * 100);
+    if (motion->state == MOTION_CONTINUOUS ||
+        motion->state == MOTION_WATCHDOG_RAMP) {
+        snprintf(watchdog_age, sizeof(watchdog_age), "%lu",
+                 (unsigned long)motion_controller_watchdog_age(motion,
+                                                               now_ms));
+    } else {
+        snprintf(watchdog_age, sizeof(watchdog_age), "NA");
+    }
+    return snprintf(buffer, capacity,
+                    "[MOTION] STATE=%s CURRENT=%s TARGET=%s "
+                    "WATCHDOG_AGE_MS=%s\r\n",
+                    motion_controller_state_name(motion->state), current,
+                    target, watchdog_age);
+}
+
 static bool append_formatted_line(char *record, size_t capacity, size_t *used,
                                   int length)
 {
@@ -354,7 +379,9 @@ static void enqueue_status_report(MotionLogQueue *queue,
                                   const WheelStatus *wheel,
                                   const Phase1Monitor *monitor, bool can1_ok,
                                   const Can1Status *can_status,
-                                  bool can_status_valid, uint32_t now_ms)
+                                  bool can_status_valid,
+                                  const MotionController *motion,
+                                  uint32_t now_ms)
 {
     char record[MOTION_LOG_RECORD_CAPACITY];
     size_t used = 0u;
@@ -369,7 +396,11 @@ static void enqueue_status_report(MotionLogQueue *queue,
             record, sizeof(record), &used,
             format_diagnostics(&record[used], sizeof(record) - used, monitor,
                                can1_ok, can_status, can_status_valid, now_ms,
-                               *dropped_logs))) {
+                               *dropped_logs)) ||
+        !append_formatted_line(
+            record, sizeof(record), &used,
+            format_motion_status(&record[used], sizeof(record) - used,
+                                 motion, now_ms))) {
         (*dropped_logs)++;
         return;
     }
@@ -380,7 +411,7 @@ static void enqueue_periodic_telemetry(
     MotionLogQueue *queue, uint32_t *dropped_logs, bool wheel_due,
     bool health_due, const WheelStatus *wheel, const Phase1Monitor *monitor,
     bool can1_ok, const Can1Status *can_status, bool can_status_valid,
-    uint32_t now_ms)
+    const MotionController *motion, uint32_t now_ms)
 {
     char record[MOTION_LOG_RECORD_CAPACITY];
     size_t used = 0u;
@@ -398,6 +429,12 @@ static void enqueue_periodic_telemetry(
             format_diagnostics(&record[used], sizeof(record) - used, monitor,
                                can1_ok, can_status, can_status_valid, now_ms,
                                *dropped_logs));
+    }
+    if (formatted && (wheel_due || health_due)) {
+        formatted = append_formatted_line(
+            record, sizeof(record), &used,
+            format_motion_status(&record[used], sizeof(record) - used,
+                                 motion, now_ms));
     }
     if (!formatted || used == 0u) {
         (*dropped_logs)++;
@@ -430,7 +467,8 @@ static MotionSafetySnapshot build_motion_safety_snapshot(
     return safety;
 }
 
-static bool execute_motion_action(MotionAction action, WheelStatus *wheel)
+static bool execute_motion_action(MotionAction action, int8_t velocity_step,
+                                  WheelStatus *wheel)
 {
     H6215CanFrame frame;
     bool built;
@@ -439,11 +477,8 @@ static bool execute_motion_action(MotionAction action, WheelStatus *wheel)
     case MOTION_ACTION_ENABLE:
         built = h6215_build_enable_command(&frame);
         break;
-    case MOTION_ACTION_POSITIVE_VELOCITY:
-        built = h6215_build_positive_velocity_command(&frame);
-        break;
-    case MOTION_ACTION_ZERO_VELOCITY:
-        built = h6215_build_zero_velocity_command(&frame);
+    case MOTION_ACTION_VELOCITY:
+        built = h6215_build_velocity_step(velocity_step, &frame);
         break;
     case MOTION_ACTION_DISABLE:
         built = h6215_build_disable_command(&frame);
@@ -466,10 +501,8 @@ static const char *motion_action_name(MotionAction action)
     switch (action) {
     case MOTION_ACTION_ENABLE:
         return "ENABLE";
-    case MOTION_ACTION_POSITIVE_VELOCITY:
-        return "POSITIVE_VELOCITY";
-    case MOTION_ACTION_ZERO_VELOCITY:
-        return "ZERO_VELOCITY";
+    case MOTION_ACTION_VELOCITY:
+        return "VELOCITY";
     case MOTION_ACTION_DISABLE:
         return "DISABLE";
     case MOTION_ACTION_NONE:
@@ -479,9 +512,12 @@ static const char *motion_action_name(MotionAction action)
 }
 
 static bool append_motion_event(char *record, size_t capacity, size_t *used,
-                                MotionEvent event, const char *reason)
+                                MotionDecision decision)
 {
-    switch (event) {
+    char target[16];
+
+    format_milli(target, sizeof(target), decision.velocity_step * 100);
+    switch (decision.event) {
     case MOTION_EVENT_STATUS:
         return append_log_format(record, capacity, used,
                                  "STATUS_REQUESTED\r\n");
@@ -493,28 +529,45 @@ static bool append_motion_event(char *record, size_t capacity, size_t *used,
     case MOTION_EVENT_START_REJECTED:
         return append_log_format(record, capacity, used,
                                  "START_REJECTED REASON=%s\r\n",
-                                 reason != NULL ? reason : "UNKNOWN");
+                                 decision.reason != NULL ? decision.reason : "UNKNOWN");
     case MOTION_EVENT_START_REQUESTED:
-        return append_log_format(
-            record, capacity, used,
-            "MOTION_START_REQUESTED TARGET=+0.200rad/s\r\n");
+        return append_log_format(record, capacity, used,
+                                 decision.velocity_step == 0 ?
+                                     "MOTION_START_REQUESTED MODE=CONTINUOUS\r\n" :
+                                     "MOTION_START_REQUESTED TARGET=%srad/s\r\n",
+                                 target);
     case MOTION_EVENT_RUNNING:
         return append_log_format(
             record, capacity, used,
-            "MOTION_RUNNING TARGET=+0.200rad/s DURATION_MS=1000\r\n");
+            "MOTION_RUNNING TARGET=%srad/s DURATION_MS=1000\r\n", target);
+    case MOTION_EVENT_CONTINUOUS_READY:
+        return append_log_format(record, capacity, used,
+                                 "CONTINUOUS_READY TARGET=0.000rad/s WATCHDOG_MS=5000\r\n");
+    case MOTION_EVENT_TARGET_UPDATED:
+        return append_log_format(record, capacity, used,
+                                 "TARGET_UPDATED TARGET=%srad/s\r\n", target);
+    case MOTION_EVENT_KEEPALIVE:
+        return append_log_format(record, capacity, used, "KEEPALIVE_OK\r\n");
+    case MOTION_EVENT_HOST_WATCHDOG:
+        return append_log_format(record, capacity, used,
+                                 "HOST_WATCHDOG_TIMEOUT RAMPING_TO_ZERO\r\n");
     case MOTION_EVENT_ZERO_HOLD:
         return append_log_format(record, capacity, used,
-                                 "ZERO_SPEED_HOLD DURATION_MS=200\r\n");
+                                 decision.reason != NULL ?
+                                     "WATCHDOG_ZERO_HOLD DURATION_MS=200\r\n" :
+                                     "ZERO_SPEED_HOLD DURATION_MS=200\r\n");
     case MOTION_EVENT_COMPLETE:
         return append_log_format(record, capacity, used,
-                                 "TEST_COMPLETE MOTOR_DISABLED\r\n");
+                                 decision.reason != NULL ?
+                                     "WATCHDOG_STOP_COMPLETE MOTOR_DISABLED\r\n" :
+                                     "TEST_COMPLETE MOTOR_DISABLED\r\n");
     case MOTION_EVENT_EMERGENCY_STOP:
         return append_log_format(record, capacity, used,
                                  "EMERGENCY_STOP_REQUESTED\r\n");
     case MOTION_EVENT_SAFETY_TRIP:
         return append_log_format(record, capacity, used,
                                  "SAFETY_TRIP REASON=%s\r\n",
-                                 reason != NULL ? reason : "UNKNOWN");
+                                 decision.reason != NULL ? decision.reason : "UNKNOWN");
     case MOTION_EVENT_TX_FAILURE:
         return append_log_format(record, capacity, used,
                                  "TX_FAILURE REASON=CAN_TX_FAILED\r\n");
@@ -531,13 +584,10 @@ static bool append_successful_motion_action(char *record, size_t capacity,
     case MOTION_ACTION_ENABLE:
         return append_log_format(record, capacity, used,
                                  "MOTOR_ENABLE_TX_OK\r\n");
-    case MOTION_ACTION_ZERO_VELOCITY:
-        return append_log_format(record, capacity, used,
-                                 "ZERO_SPEED_TX_OK\r\n");
     case MOTION_ACTION_DISABLE:
         return append_log_format(record, capacity, used,
                                  "MOTOR_DISABLE_TX_OK\r\n");
-    case MOTION_ACTION_POSITIVE_VELOCITY:
+    case MOTION_ACTION_VELOCITY:
     case MOTION_ACTION_NONE:
     default:
         return true;
@@ -561,7 +611,7 @@ static void enqueue_motion_decision_log(MotionLogQueue *queue,
 
     if (!motion_event_follows_action(decision.event)) {
         formatted = append_motion_event(record, sizeof(record), &used,
-                                        decision.event, decision.reason);
+                                        decision);
     }
     if (formatted && decision.action != MOTION_ACTION_NONE) {
         if (action_succeeded) {
@@ -577,7 +627,7 @@ static void enqueue_motion_decision_log(MotionLogQueue *queue,
     if (formatted && action_succeeded &&
         motion_event_follows_action(decision.event)) {
         formatted = append_motion_event(record, sizeof(record), &used,
-                                        decision.event, decision.reason);
+                                        decision);
     }
     if (!formatted) {
         (*dropped_logs)++;
@@ -594,7 +644,8 @@ static bool attempt_motion_decision(MotionDecision decision,
                                     uint32_t *dropped_logs)
 {
     bool succeeded = decision.action == MOTION_ACTION_NONE ||
-                     execute_motion_action(decision.action, wheel);
+                     execute_motion_action(decision.action,
+                                           decision.velocity_step, wheel);
 
     enqueue_motion_decision_log(queue, dropped_logs, decision, succeeded);
     return succeeded;
@@ -629,7 +680,7 @@ static void execute_motion_decision(MotionController *controller,
 
     retained = motion_controller_tx_failed(controller);
     enqueue_motion_event_only(retained, queue, dropped_logs);
-    pending_motion_action_failed(pending, recovery.action, retained.action);
+    pending_motion_decision_failed(pending, recovery, retained);
 }
 
 static bool service_pending_motion_action(MotionController *controller,
@@ -640,13 +691,13 @@ static bool service_pending_motion_action(MotionController *controller,
 {
     MotionDecision decision = {0};
     MotionDecision recovery;
-    MotionAction attempted;
+    MotionDecision attempted;
 
     if (!pending_motion_action_has_value(pending)) {
         return true;
     }
-    attempted = pending_motion_action_begin_attempt(pending);
-    decision.action = attempted;
+    attempted = pending_motion_decision_begin_attempt(pending);
+    decision = attempted;
     if (attempt_motion_decision(decision, wheel, queue, dropped_logs)) {
         pending_motion_action_succeeded(pending);
         return true;
@@ -654,7 +705,7 @@ static bool service_pending_motion_action(MotionController *controller,
 
     recovery = motion_controller_tx_failed(controller);
     enqueue_motion_event_only(recovery, queue, dropped_logs);
-    pending_motion_action_failed(pending, attempted, recovery.action);
+    pending_motion_decision_failed(pending, attempted, recovery);
     return false;
 }
 
@@ -749,7 +800,7 @@ int main(void)
                 if (decision.event == MOTION_EVENT_STATUS) {
                     enqueue_status_report(
                         &log_queue, &dropped_logs, &wheel, &monitor, can1_ok,
-                        &can_status, can_status_valid, now_ms);
+                        &can_status, can_status_valid, &motion, now_ms);
                 } else {
                     execute_motion_decision(
                         &motion, decision, &wheel, &log_queue,
@@ -802,7 +853,7 @@ int main(void)
             enqueue_periodic_telemetry(
                 &log_queue, &dropped_logs, wheel_log_due, health_log_due,
                 &wheel, &monitor, can1_ok, &can_status, can_status_valid,
-                now_ms);
+                &motion, now_ms);
         }
         service_log_queue(&log_queue, &dropped_logs);
     }

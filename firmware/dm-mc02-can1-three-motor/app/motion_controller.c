@@ -2,330 +2,291 @@
 
 #include <stddef.h>
 
-#define MOTION_PARAMETER_MASK_COMPLETE 0x1fu
-#define MOTION_CONTROL_MODE_VELOCITY 3u
-#define MOTION_STATE_DISABLED 0u
-#define MOTION_STATE_ENABLED 1u
-#define MOTION_ARM_WINDOW_MS 10000u
-#define MOTION_ENABLE_WAIT_MS 100u
-#define MOTION_RUNNING_MS 1000u
-#define MOTION_ZERO_HOLD_MS 200u
-#define MOTION_REFRESH_MS 10u
-#define MOTION_START_FEEDBACK_MAX_AGE_MS 500u
-#define MOTION_RUNTIME_FEEDBACK_MAX_AGE_MS 100u
-#define MOTION_START_SPEED_LIMIT_MILLIRAD_S 100
-#define MOTION_RUNTIME_SPEED_LIMIT_MILLIRAD_S 800
-#define MOTION_TEMPERATURE_LIMIT_C 60u
+#define PARAMETER_MASK_COMPLETE 0x1fu
+#define CONTROL_MODE_VELOCITY 3u
+#define MOTOR_DISABLED 0u
+#define MOTOR_ENABLED 1u
+#define ARM_WINDOW_MS 10000u
+#define ENABLE_WAIT_MS 100u
+#define PULSE_MS 1000u
+#define ZERO_HOLD_MS 200u
+#define REFRESH_MS 10u
+#define RAMP_MS 100u
+#define WATCHDOG_MS 5000u
+#define START_FEEDBACK_MAX_AGE_MS 500u
+#define RUNTIME_FEEDBACK_MAX_AGE_MS 100u
+#define START_SPEED_LIMIT_MILLIRAD_S 100
+#define RUNTIME_SPEED_LIMIT_MILLIRAD_S 800
+#define TEMPERATURE_LIMIT_C 60u
 
 static MotionDecision decision(MotionAction action, MotionEvent event,
-                               const char *reason)
+                               const char *reason, int8_t step)
 {
-    return (MotionDecision){
-        .action = action,
-        .event = event,
-        .reason = reason,
-    };
+    return (MotionDecision){action, event, reason, step};
 }
 
-static bool elapsed_at_least(uint32_t now_ms, uint32_t then_ms,
-                             uint32_t interval_ms)
+static bool elapsed(uint32_t now, uint32_t then, uint32_t interval)
 {
-    return now_ms - then_ms >= interval_ms;
+    return now - then >= interval;
 }
 
-static uint8_t normalize_command(uint8_t command)
+static uint8_t normalize(uint8_t command)
 {
-    if (command >= (uint8_t)'a' && command <= (uint8_t)'z') {
-        return command - ((uint8_t)'a' - (uint8_t)'A');
-    }
-    return command;
+    return command >= 'a' && command <= 'z' ? command - ('a' - 'A') : command;
 }
 
-static const char *start_rejection_reason(const MotionSafetySnapshot *safety)
+static const char *start_rejection(const MotionSafetySnapshot *s)
 {
-    if (safety->parameter_mask != MOTION_PARAMETER_MASK_COMPLETE) {
-        return "PARAMETERS_INCOMPLETE";
-    }
-    if (safety->control_mode != MOTION_CONTROL_MODE_VELOCITY) {
-        return "MODE_NOT_VELOCITY";
-    }
-    if (!safety->feedback_valid ||
-        safety->feedback_age_ms > MOTION_START_FEEDBACK_MAX_AGE_MS) {
-        return "FEEDBACK_STALE";
-    }
-    if (safety->motor_state != MOTION_STATE_DISABLED) {
-        return "STATE_NOT_DISABLED";
-    }
-    if (safety->velocity_millirad_s <= -MOTION_START_SPEED_LIMIT_MILLIRAD_S ||
-        safety->velocity_millirad_s >= MOTION_START_SPEED_LIMIT_MILLIRAD_S) {
-        return "SPEED_NOT_ZERO";
-    }
-    if (safety->mos_temperature_c >= MOTION_TEMPERATURE_LIMIT_C ||
-        safety->rotor_temperature_c >= MOTION_TEMPERATURE_LIMIT_C) {
-        return "TEMPERATURE_LIMIT";
-    }
-    if (safety->can_warning || safety->can_passive || safety->can_bus_off) {
-        return "CAN_NOT_ACTIVE";
-    }
+    if (s->parameter_mask != PARAMETER_MASK_COMPLETE) return "PARAMETERS_INCOMPLETE";
+    if (s->control_mode != CONTROL_MODE_VELOCITY) return "MODE_NOT_VELOCITY";
+    if (!s->feedback_valid || s->feedback_age_ms > START_FEEDBACK_MAX_AGE_MS) return "FEEDBACK_STALE";
+    if (s->motor_state != MOTOR_DISABLED) return "STATE_NOT_DISABLED";
+    if (s->velocity_millirad_s <= -START_SPEED_LIMIT_MILLIRAD_S ||
+        s->velocity_millirad_s >= START_SPEED_LIMIT_MILLIRAD_S) return "SPEED_NOT_ZERO";
+    if (s->mos_temperature_c >= TEMPERATURE_LIMIT_C ||
+        s->rotor_temperature_c >= TEMPERATURE_LIMIT_C) return "TEMPERATURE_LIMIT";
+    if (s->can_warning || s->can_passive || s->can_bus_off) return "CAN_NOT_ACTIVE";
     return NULL;
 }
 
-static const char *enable_wait_trip_reason(const MotionSafetySnapshot *safety)
+static const char *runtime_trip(const MotionSafetySnapshot *s, bool require_enabled)
 {
-    if (!safety->feedback_valid ||
-        safety->feedback_age_ms > MOTION_RUNTIME_FEEDBACK_MAX_AGE_MS) {
-        return "FEEDBACK_STALE";
-    }
-    if (safety->velocity_millirad_s < -MOTION_RUNTIME_SPEED_LIMIT_MILLIRAD_S ||
-        safety->velocity_millirad_s > MOTION_RUNTIME_SPEED_LIMIT_MILLIRAD_S) {
-        return "SPEED_LIMIT";
-    }
-    if (safety->mos_temperature_c >= MOTION_TEMPERATURE_LIMIT_C ||
-        safety->rotor_temperature_c >= MOTION_TEMPERATURE_LIMIT_C) {
-        return "TEMPERATURE_LIMIT";
-    }
-    if (safety->can_passive || safety->can_bus_off) {
-        return "CAN_NOT_ACTIVE";
-    }
+    if (!s->feedback_valid || s->feedback_age_ms > RUNTIME_FEEDBACK_MAX_AGE_MS) return "FEEDBACK_STALE";
+    if (s->velocity_millirad_s < -RUNTIME_SPEED_LIMIT_MILLIRAD_S ||
+        s->velocity_millirad_s > RUNTIME_SPEED_LIMIT_MILLIRAD_S) return "SPEED_LIMIT";
+    if (s->mos_temperature_c >= TEMPERATURE_LIMIT_C ||
+        s->rotor_temperature_c >= TEMPERATURE_LIMIT_C) return "TEMPERATURE_LIMIT";
+    if (s->can_passive || s->can_bus_off) return "CAN_NOT_ACTIVE";
+    if (require_enabled && s->motor_state != MOTOR_ENABLED) return "STATE_NOT_ENABLED";
     return NULL;
 }
 
-static const char *runtime_trip_reason(const MotionSafetySnapshot *safety)
+static MotionDecision fault_stop(MotionController *c, uint32_t now,
+                                 MotionEvent event, const char *reason)
 {
-    const char *reason = enable_wait_trip_reason(safety);
-
-    if (reason != NULL) {
-        return reason;
-    }
-    if (safety->motor_state != MOTION_STATE_ENABLED) {
-        return "STATE_NOT_ENABLED";
-    }
-    return NULL;
+    c->armed = false;
+    c->state = MOTION_FAULT_DISABLE;
+    c->current_step = 0;
+    c->target_step = 0;
+    c->last_action_ms = now;
+    return decision(MOTION_ACTION_VELOCITY, event, reason, 0);
 }
 
-static MotionDecision start_fault_shutdown(MotionController *controller,
-                                           uint32_t now_ms,
-                                           MotionEvent event,
-                                           const char *reason)
+void motion_controller_init(MotionController *c)
 {
-    controller->armed = false;
-    controller->state = MOTION_FAULT_ZERO;
-    controller->phase_started_ms = now_ms;
-    controller->last_action_ms = now_ms;
-
-    /* Zero is returned in the triggering call; the following millisecond disables. */
-    controller->state = MOTION_FAULT_DISABLE;
-    return decision(MOTION_ACTION_ZERO_VELOCITY, event, reason);
+    if (c == NULL) return;
+    *c = (MotionController){.state = MOTION_IDLE_DISABLED};
 }
 
-void motion_controller_init(MotionController *controller)
-{
-    if (controller == NULL) {
-        return;
-    }
-
-    controller->state = MOTION_IDLE_DISABLED;
-    controller->armed = false;
-    controller->armed_at_ms = 0u;
-    controller->phase_started_ms = 0u;
-    controller->last_action_ms = 0u;
-}
-
-MotionDecision motion_controller_command(MotionController *controller,
-                                          uint8_t command,
-                                          const MotionSafetySnapshot *safety)
+static MotionDecision request_start(MotionController *c, uint8_t command,
+                                    const MotionSafetySnapshot *s)
 {
     const char *reason;
-
-    if (controller == NULL || safety == NULL) {
-        return decision(MOTION_ACTION_NONE, MOTION_EVENT_NONE, "INVALID_ARGUMENT");
+    if (c->armed && elapsed(s->now_ms, c->armed_at_ms, ARM_WINDOW_MS)) {
+        c->armed = false;
+        c->state = MOTION_IDLE_DISABLED;
+        return decision(MOTION_ACTION_NONE, MOTION_EVENT_ARM_TIMEOUT, "ARM_TIMEOUT", 0);
     }
-
-    command = normalize_command(command);
-    if (command == (uint8_t)'\r' || command == (uint8_t)'\n') {
-        return decision(MOTION_ACTION_NONE, MOTION_EVENT_NONE, "IGNORED");
-    }
-
-    switch (command) {
-    case 'S':
-        return decision(MOTION_ACTION_NONE, MOTION_EVENT_STATUS, NULL);
-    case 'A':
-        if (controller->state != MOTION_IDLE_DISABLED &&
-            controller->state != MOTION_ARMED) {
-            return decision(MOTION_ACTION_NONE, MOTION_EVENT_START_REJECTED,
-                            "MOTION_ACTIVE");
-        }
-        controller->state = MOTION_ARMED;
-        controller->armed = true;
-        controller->armed_at_ms = safety->now_ms;
-        return decision(MOTION_ACTION_NONE, MOTION_EVENT_ARMED, NULL);
-    case 'G':
-        if (controller->armed &&
-            elapsed_at_least(safety->now_ms, controller->armed_at_ms,
-                             MOTION_ARM_WINDOW_MS)) {
-            controller->armed = false;
-            controller->state = MOTION_IDLE_DISABLED;
-            return decision(MOTION_ACTION_NONE, MOTION_EVENT_ARM_TIMEOUT,
-                            "ARM_TIMEOUT");
-        }
-        if (!controller->armed || controller->state != MOTION_ARMED) {
-            return decision(MOTION_ACTION_NONE, MOTION_EVENT_START_REJECTED,
-                            "SEND_A_FIRST");
-        }
-        reason = start_rejection_reason(safety);
-        if (reason != NULL) {
-            return decision(MOTION_ACTION_NONE, MOTION_EVENT_START_REJECTED,
-                            reason);
-        }
-        controller->armed = false;
-        controller->state = MOTION_ENABLE_WAIT;
-        controller->phase_started_ms = safety->now_ms;
-        controller->last_action_ms = safety->now_ms;
-        return decision(MOTION_ACTION_ENABLE, MOTION_EVENT_START_REQUESTED,
-                        NULL);
-    case 'X':
-        return start_fault_shutdown(controller, safety->now_ms,
-                                    MOTION_EVENT_EMERGENCY_STOP,
-                                    "EMERGENCY_STOP");
-    default:
-        return decision(MOTION_ACTION_NONE, MOTION_EVENT_NONE,
-                        "UNKNOWN_COMMAND");
-    }
+    if (!c->armed || c->state != MOTION_ARMED)
+        return decision(MOTION_ACTION_NONE, MOTION_EVENT_START_REJECTED, "SEND_A_FIRST", 0);
+    reason = start_rejection(s);
+    if (reason != NULL)
+        return decision(MOTION_ACTION_NONE, MOTION_EVENT_START_REJECTED, reason, 0);
+    c->armed = false;
+    c->state = MOTION_ENABLE_WAIT;
+    c->phase_started_ms = s->now_ms;
+    c->last_action_ms = s->now_ms;
+    c->continuous_requested = command == 'C';
+    c->pulse_step = command == 'B' ? -2 : 2;
+    c->current_step = 0;
+    c->target_step = 0;
+    c->watchdog_stop = false;
+    return decision(MOTION_ACTION_ENABLE, MOTION_EVENT_START_REQUESTED, NULL,
+                    c->continuous_requested ? 0 : c->pulse_step);
 }
 
-MotionDecision motion_controller_step(MotionController *controller,
-                                       const MotionSafetySnapshot *safety)
+MotionDecision motion_controller_command(MotionController *c, uint8_t command,
+                                          const MotionSafetySnapshot *s)
+{
+    if (c == NULL || s == NULL)
+        return decision(MOTION_ACTION_NONE, MOTION_EVENT_NONE, "INVALID_ARGUMENT", 0);
+    command = normalize(command);
+    if (command == '\r' || command == '\n')
+        return decision(MOTION_ACTION_NONE, MOTION_EVENT_NONE, "IGNORED", 0);
+    if (command == 'X')
+        return fault_stop(c, s->now_ms, MOTION_EVENT_EMERGENCY_STOP, "EMERGENCY_STOP");
+    if (command == 'S')
+        return decision(MOTION_ACTION_NONE, MOTION_EVENT_STATUS, NULL, 0);
+    if (command == 'A') {
+        if (c->state != MOTION_IDLE_DISABLED && c->state != MOTION_ARMED)
+            return decision(MOTION_ACTION_NONE, MOTION_EVENT_START_REJECTED, "MOTION_ACTIVE", 0);
+        c->state = MOTION_ARMED;
+        c->armed = true;
+        c->armed_at_ms = s->now_ms;
+        return decision(MOTION_ACTION_NONE, MOTION_EVENT_ARMED, NULL, 0);
+    }
+    if (command == 'G' || command == 'B' || command == 'C')
+        return request_start(c, command, s);
+    if (c->state == MOTION_CONTINUOUS) {
+        if (command == '+' || command == '-' || command == '0' || command == 'K') {
+            c->last_control_ms = s->now_ms;
+            if (command == '+' && c->target_step < 5) c->target_step++;
+            if (command == '-' && c->target_step > -5) c->target_step--;
+            if (command == '0') c->target_step = 0;
+            return decision(MOTION_ACTION_NONE,
+                            command == 'K' ? MOTION_EVENT_KEEPALIVE : MOTION_EVENT_TARGET_UPDATED,
+                            NULL, c->target_step);
+        }
+    }
+    return decision(MOTION_ACTION_NONE, MOTION_EVENT_NONE, "UNKNOWN_COMMAND", 0);
+}
+
+static MotionDecision refresh(MotionController *c, uint32_t now, int8_t step)
+{
+    c->last_action_ms = now;
+    return decision(MOTION_ACTION_VELOCITY, MOTION_EVENT_NONE, NULL, step);
+}
+
+MotionDecision motion_controller_step(MotionController *c,
+                                       const MotionSafetySnapshot *s)
 {
     const char *reason;
-
-    if (controller == NULL || safety == NULL) {
-        return decision(MOTION_ACTION_NONE, MOTION_EVENT_NONE, "INVALID_ARGUMENT");
-    }
-
-    switch (controller->state) {
+    if (c == NULL || s == NULL)
+        return decision(MOTION_ACTION_NONE, MOTION_EVENT_NONE, "INVALID_ARGUMENT", 0);
+    switch (c->state) {
     case MOTION_IDLE_DISABLED:
-        return decision(MOTION_ACTION_NONE, MOTION_EVENT_NONE, NULL);
+        return decision(MOTION_ACTION_NONE, MOTION_EVENT_NONE, NULL, 0);
     case MOTION_ARMED:
-        if (elapsed_at_least(safety->now_ms, controller->armed_at_ms,
-                             MOTION_ARM_WINDOW_MS)) {
-            controller->armed = false;
-            controller->state = MOTION_IDLE_DISABLED;
-            return decision(MOTION_ACTION_NONE, MOTION_EVENT_ARM_TIMEOUT,
-                            "ARM_TIMEOUT");
+        if (elapsed(s->now_ms, c->armed_at_ms, ARM_WINDOW_MS)) {
+            c->armed = false; c->state = MOTION_IDLE_DISABLED;
+            return decision(MOTION_ACTION_NONE, MOTION_EVENT_ARM_TIMEOUT, "ARM_TIMEOUT", 0);
         }
-        return decision(MOTION_ACTION_NONE, MOTION_EVENT_NONE, NULL);
+        return decision(MOTION_ACTION_NONE, MOTION_EVENT_NONE, NULL, 0);
     case MOTION_ENABLE_WAIT:
-        if ((!safety->feedback_valid ||
-             safety->feedback_age_ms > MOTION_RUNTIME_FEEDBACK_MAX_AGE_MS) &&
-            (safety->can_passive || safety->can_bus_off)) {
-            return start_fault_shutdown(controller, safety->now_ms,
-                                        MOTION_EVENT_SAFETY_TRIP,
-                                        "CAN_NOT_ACTIVE");
+        if ((!s->feedback_valid ||
+             s->feedback_age_ms > RUNTIME_FEEDBACK_MAX_AGE_MS) &&
+            (s->can_passive || s->can_bus_off))
+            return fault_stop(c, s->now_ms, MOTION_EVENT_SAFETY_TRIP,
+                              "CAN_NOT_ACTIVE");
+        if (s->feedback_valid &&
+            s->feedback_age_ms <= RUNTIME_FEEDBACK_MAX_AGE_MS) {
+            reason = runtime_trip(s, false);
+            if (reason != NULL)
+                return fault_stop(c, s->now_ms, MOTION_EVENT_SAFETY_TRIP,
+                                  reason);
+            if (s->motor_state != MOTOR_DISABLED &&
+                s->motor_state != MOTOR_ENABLED)
+                return fault_stop(c, s->now_ms, MOTION_EVENT_SAFETY_TRIP,
+                                  "STATE_NOT_ENABLED");
         }
-        if (safety->feedback_valid &&
-            safety->feedback_age_ms <= MOTION_RUNTIME_FEEDBACK_MAX_AGE_MS) {
-            reason = enable_wait_trip_reason(safety);
-            if (reason != NULL) {
-                return start_fault_shutdown(controller, safety->now_ms,
-                                            MOTION_EVENT_SAFETY_TRIP, reason);
+        if (s->feedback_valid && s->feedback_age_ms <= RUNTIME_FEEDBACK_MAX_AGE_MS &&
+            s->motor_state == MOTOR_ENABLED &&
+            s->now_ms - c->phase_started_ms <= ENABLE_WAIT_MS) {
+            c->phase_started_ms = c->last_action_ms = c->last_control_ms = c->last_ramp_ms = s->now_ms;
+            if (c->continuous_requested) {
+                c->state = MOTION_CONTINUOUS;
+                return decision(MOTION_ACTION_VELOCITY, MOTION_EVENT_CONTINUOUS_READY, NULL, 0);
             }
-            if (safety->motor_state == MOTION_STATE_ENABLED &&
-                safety->now_ms - controller->phase_started_ms <=
-                    MOTION_ENABLE_WAIT_MS) {
-                controller->state = MOTION_RUNNING;
-                controller->phase_started_ms = safety->now_ms;
-                controller->last_action_ms = safety->now_ms;
-                return decision(MOTION_ACTION_POSITIVE_VELOCITY,
-                                MOTION_EVENT_RUNNING, NULL);
-            }
-            if (safety->motor_state != MOTION_STATE_DISABLED) {
-                return start_fault_shutdown(controller, safety->now_ms,
-                                            MOTION_EVENT_SAFETY_TRIP,
-                                            "STATE_NOT_ENABLED");
-            }
+            c->state = MOTION_RUNNING;
+            c->current_step = c->target_step = c->pulse_step;
+            return decision(MOTION_ACTION_VELOCITY, MOTION_EVENT_RUNNING, NULL, c->pulse_step);
         }
-        if (elapsed_at_least(safety->now_ms, controller->phase_started_ms,
-                             MOTION_ENABLE_WAIT_MS)) {
-            reason = !safety->feedback_valid ||
-                             safety->feedback_age_ms >
-                                 MOTION_RUNTIME_FEEDBACK_MAX_AGE_MS
-                         ? "FEEDBACK_STALE"
-                         : "STATE_NOT_ENABLED";
-            return start_fault_shutdown(controller, safety->now_ms,
-                                        MOTION_EVENT_SAFETY_TRIP, reason);
-        }
-        return decision(MOTION_ACTION_NONE, MOTION_EVENT_NONE, NULL);
+        if (elapsed(s->now_ms, c->phase_started_ms, ENABLE_WAIT_MS))
+            return fault_stop(c, s->now_ms, MOTION_EVENT_SAFETY_TRIP,
+                              !s->feedback_valid || s->feedback_age_ms > RUNTIME_FEEDBACK_MAX_AGE_MS ?
+                                  "FEEDBACK_STALE" : "STATE_NOT_ENABLED");
+        return decision(MOTION_ACTION_NONE, MOTION_EVENT_NONE, NULL, 0);
     case MOTION_RUNNING:
-        reason = runtime_trip_reason(safety);
-        if (reason != NULL) {
-            return start_fault_shutdown(controller, safety->now_ms,
-                                        MOTION_EVENT_SAFETY_TRIP, reason);
+        reason = runtime_trip(s, true);
+        if (reason != NULL) return fault_stop(c, s->now_ms, MOTION_EVENT_SAFETY_TRIP, reason);
+        if (elapsed(s->now_ms, c->phase_started_ms, PULSE_MS)) {
+            c->state = MOTION_ZERO_HOLD; c->watchdog_stop = false;
+            c->phase_started_ms = c->last_action_ms = s->now_ms; c->current_step = c->target_step = 0;
+            return decision(MOTION_ACTION_VELOCITY, MOTION_EVENT_ZERO_HOLD, NULL, 0);
         }
-        if (elapsed_at_least(safety->now_ms, controller->phase_started_ms,
-                             MOTION_RUNNING_MS)) {
-            controller->state = MOTION_ZERO_HOLD;
-            controller->phase_started_ms = safety->now_ms;
-            controller->last_action_ms = safety->now_ms;
-            return decision(MOTION_ACTION_ZERO_VELOCITY,
-                            MOTION_EVENT_ZERO_HOLD, NULL);
+        if (elapsed(s->now_ms, c->last_action_ms, REFRESH_MS)) return refresh(c, s->now_ms, c->current_step);
+        return decision(MOTION_ACTION_NONE, MOTION_EVENT_NONE, NULL, 0);
+    case MOTION_CONTINUOUS:
+        reason = runtime_trip(s, true);
+        if (reason != NULL) return fault_stop(c, s->now_ms, MOTION_EVENT_SAFETY_TRIP, reason);
+        if (elapsed(s->now_ms, c->last_control_ms, WATCHDOG_MS)) {
+            c->state = MOTION_WATCHDOG_RAMP; c->watchdog_stop = true; c->target_step = 0;
+            c->last_ramp_ms = s->now_ms;
+            return decision(MOTION_ACTION_NONE, MOTION_EVENT_HOST_WATCHDOG, "HOST_WATCHDOG", 0);
         }
-        if (elapsed_at_least(safety->now_ms, controller->last_action_ms,
-                             MOTION_REFRESH_MS)) {
-            controller->last_action_ms = safety->now_ms;
-            return decision(MOTION_ACTION_POSITIVE_VELOCITY,
-                            MOTION_EVENT_NONE, NULL);
+        if (elapsed(s->now_ms, c->last_ramp_ms, RAMP_MS) && c->current_step != c->target_step) {
+            c->current_step += c->current_step < c->target_step ? 1 : -1;
+            c->last_ramp_ms = c->last_action_ms = s->now_ms;
+            return decision(MOTION_ACTION_VELOCITY, MOTION_EVENT_NONE, NULL, c->current_step);
         }
-        return decision(MOTION_ACTION_NONE, MOTION_EVENT_NONE, NULL);
+        if (elapsed(s->now_ms, c->last_action_ms, REFRESH_MS)) return refresh(c, s->now_ms, c->current_step);
+        return decision(MOTION_ACTION_NONE, MOTION_EVENT_NONE, NULL, 0);
+    case MOTION_WATCHDOG_RAMP:
+        reason = runtime_trip(s, true);
+        if (reason != NULL) return fault_stop(c, s->now_ms, MOTION_EVENT_SAFETY_TRIP, reason);
+        if (c->current_step == 0) {
+            c->state = MOTION_ZERO_HOLD; c->phase_started_ms = c->last_action_ms = s->now_ms;
+            return decision(MOTION_ACTION_VELOCITY, MOTION_EVENT_ZERO_HOLD, "HOST_WATCHDOG", 0);
+        }
+        if (elapsed(s->now_ms, c->last_ramp_ms, RAMP_MS)) {
+            c->current_step += c->current_step > 0 ? -1 : 1;
+            c->last_ramp_ms = c->last_action_ms = s->now_ms;
+            return decision(MOTION_ACTION_VELOCITY, MOTION_EVENT_NONE, NULL, c->current_step);
+        }
+        if (elapsed(s->now_ms, c->last_action_ms, REFRESH_MS)) return refresh(c, s->now_ms, c->current_step);
+        return decision(MOTION_ACTION_NONE, MOTION_EVENT_NONE, NULL, 0);
     case MOTION_ZERO_HOLD:
-        reason = runtime_trip_reason(safety);
-        if (reason != NULL) {
-            return start_fault_shutdown(controller, safety->now_ms,
-                                        MOTION_EVENT_SAFETY_TRIP, reason);
-        }
-        if (elapsed_at_least(safety->now_ms, controller->phase_started_ms,
-                             MOTION_ZERO_HOLD_MS)) {
-            controller->state = MOTION_IDLE_DISABLED;
-            controller->last_action_ms = safety->now_ms;
+        reason = runtime_trip(s, true);
+        if (reason != NULL) return fault_stop(c, s->now_ms, MOTION_EVENT_SAFETY_TRIP, reason);
+        if (elapsed(s->now_ms, c->phase_started_ms, ZERO_HOLD_MS)) {
+            c->state = MOTION_IDLE_DISABLED;
             return decision(MOTION_ACTION_DISABLE, MOTION_EVENT_COMPLETE,
-                            NULL);
+                            c->watchdog_stop ? "HOST_WATCHDOG" : NULL, 0);
         }
-        if (elapsed_at_least(safety->now_ms, controller->last_action_ms,
-                             MOTION_REFRESH_MS)) {
-            controller->last_action_ms = safety->now_ms;
-            return decision(MOTION_ACTION_ZERO_VELOCITY, MOTION_EVENT_NONE,
-                            NULL);
-        }
-        return decision(MOTION_ACTION_NONE, MOTION_EVENT_NONE, NULL);
+        if (elapsed(s->now_ms, c->last_action_ms, REFRESH_MS)) return refresh(c, s->now_ms, 0);
+        return decision(MOTION_ACTION_NONE, MOTION_EVENT_NONE, NULL, 0);
     case MOTION_FAULT_ZERO:
-        controller->state = MOTION_FAULT_DISABLE;
-        controller->last_action_ms = safety->now_ms;
-        return decision(MOTION_ACTION_ZERO_VELOCITY, MOTION_EVENT_SAFETY_TRIP,
-                        "FAULT_STOP");
+        c->state = MOTION_FAULT_DISABLE; c->last_action_ms = s->now_ms;
+        return decision(MOTION_ACTION_VELOCITY, MOTION_EVENT_SAFETY_TRIP, "FAULT_STOP", 0);
     case MOTION_FAULT_DISABLE:
-        if (elapsed_at_least(safety->now_ms, controller->last_action_ms, 1u)) {
-            controller->state = MOTION_IDLE_DISABLED;
-            return decision(MOTION_ACTION_DISABLE, MOTION_EVENT_NONE, NULL);
+        if (elapsed(s->now_ms, c->last_action_ms, 1u)) {
+            c->state = MOTION_IDLE_DISABLED;
+            return decision(MOTION_ACTION_DISABLE, MOTION_EVENT_NONE, NULL, 0);
         }
-        return decision(MOTION_ACTION_NONE, MOTION_EVENT_NONE, NULL);
+        return decision(MOTION_ACTION_NONE, MOTION_EVENT_NONE, NULL, 0);
     default:
-        motion_controller_init(controller);
-        return decision(MOTION_ACTION_NONE, MOTION_EVENT_NONE, "INVALID_STATE");
+        motion_controller_init(c);
+        return decision(MOTION_ACTION_NONE, MOTION_EVENT_NONE, "INVALID_STATE", 0);
     }
 }
 
-MotionDecision motion_controller_tx_failed(MotionController *controller)
+MotionDecision motion_controller_tx_failed(MotionController *c)
 {
-    if (controller == NULL) {
-        return decision(MOTION_ACTION_NONE, MOTION_EVENT_NONE, "INVALID_ARGUMENT");
+    if (c == NULL) return decision(MOTION_ACTION_NONE, MOTION_EVENT_NONE, "INVALID_ARGUMENT", 0);
+    if (c->state == MOTION_FAULT_DISABLE) {
+        c->state = MOTION_IDLE_DISABLED; c->armed = false;
+        return decision(MOTION_ACTION_DISABLE, MOTION_EVENT_TX_FAILURE, "TX_FAILURE", 0);
     }
+    return fault_stop(c, c->last_action_ms, MOTION_EVENT_TX_FAILURE, "TX_FAILURE");
+}
 
-    if (controller->state == MOTION_FAULT_DISABLE) {
-        controller->state = MOTION_IDLE_DISABLED;
-        controller->armed = false;
-        return decision(MOTION_ACTION_DISABLE, MOTION_EVENT_TX_FAILURE,
-                        "TX_FAILURE");
+const char *motion_controller_state_name(MotionState state)
+{
+    switch (state) {
+    case MOTION_IDLE_DISABLED: return "DISABLED";
+    case MOTION_ARMED: return "ARMED";
+    case MOTION_ENABLE_WAIT: return "ENABLE_WAIT";
+    case MOTION_RUNNING: return "PULSE";
+    case MOTION_CONTINUOUS: return "CONTINUOUS";
+    case MOTION_WATCHDOG_RAMP: return "WATCHDOG_RAMP";
+    case MOTION_ZERO_HOLD: return "ZERO_HOLD";
+    case MOTION_FAULT_ZERO: return "FAULT_ZERO";
+    case MOTION_FAULT_DISABLE: return "FAULT_DISABLE";
+    default: return "UNKNOWN";
     }
+}
 
-    return start_fault_shutdown(controller, controller->last_action_ms,
-                                MOTION_EVENT_TX_FAILURE, "TX_FAILURE");
+uint32_t motion_controller_watchdog_age(const MotionController *c, uint32_t now_ms)
+{
+    return c != NULL ? now_ms - c->last_control_ms : 0u;
 }

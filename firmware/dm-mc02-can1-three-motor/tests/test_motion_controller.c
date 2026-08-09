@@ -472,6 +472,98 @@ static void test_failed_zero_command_immediately_falls_back_to_disable(void)
     assert(controller.state == MOTION_IDLE_DISABLED);
 }
 
+static void test_negative_pulse_uses_negative_two_step(void)
+{
+    MotionController controller;
+    MotionSafetySnapshot safety = safe_disabled_snapshot(0u);
+    MotionDecision decision;
+
+    motion_controller_init(&controller);
+    assert(motion_controller_command(&controller, 'A', &safety).event ==
+           MOTION_EVENT_ARMED);
+    decision = motion_controller_command(&controller, 'B', &safety);
+    assert(decision.action == MOTION_ACTION_ENABLE);
+    assert(decision.velocity_step == -2);
+    safety = safe_enabled_snapshot(50u);
+    decision = motion_controller_step(&controller, &safety);
+    assert(decision.event == MOTION_EVENT_RUNNING);
+    assert(decision.velocity_step == -2);
+}
+
+static void test_continuous_ramp_clamp_keepalive_and_watchdog(void)
+{
+    MotionController controller;
+    MotionSafetySnapshot safety = safe_disabled_snapshot(0u);
+    MotionDecision decision;
+    int index;
+
+    motion_controller_init(&controller);
+    (void)motion_controller_command(&controller, 'A', &safety);
+    assert(motion_controller_command(&controller, 'C', &safety).action ==
+           MOTION_ACTION_ENABLE);
+    safety = safe_enabled_snapshot(50u);
+    decision = motion_controller_step(&controller, &safety);
+    assert(decision.event == MOTION_EVENT_CONTINUOUS_READY);
+    assert(decision.velocity_step == 0);
+
+    safety.now_ms = 60u;
+    for (index = 0; index < 6; ++index)
+        decision = motion_controller_command(&controller, '+', &safety);
+    assert(decision.event == MOTION_EVENT_TARGET_UPDATED);
+    assert(controller.target_step == 5);
+    safety.now_ms = 150u;
+    decision = motion_controller_step(&controller, &safety);
+    assert(decision.action == MOTION_ACTION_VELOCITY);
+    assert(decision.velocity_step == 1);
+
+    safety.now_ms = 200u;
+    decision = motion_controller_command(&controller, 'K', &safety);
+    assert(decision.event == MOTION_EVENT_KEEPALIVE);
+    safety.now_ms = 5199u;
+    assert(motion_controller_step(&controller, &safety).event !=
+           MOTION_EVENT_HOST_WATCHDOG);
+    safety.now_ms = 5200u;
+    decision = motion_controller_step(&controller, &safety);
+    assert(decision.event == MOTION_EVENT_HOST_WATCHDOG);
+    assert(controller.state == MOTION_WATCHDOG_RAMP);
+
+    safety.now_ms = 5300u;
+    decision = motion_controller_step(&controller, &safety);
+    assert(decision.action == MOTION_ACTION_VELOCITY);
+    assert(decision.velocity_step == 1);
+    safety.now_ms = 5400u;
+    decision = motion_controller_step(&controller, &safety);
+    assert(decision.action == MOTION_ACTION_VELOCITY);
+    assert(decision.velocity_step == 0);
+    safety.now_ms = 5401u;
+    decision = motion_controller_step(&controller, &safety);
+    assert(decision.event == MOTION_EVENT_ZERO_HOLD);
+    safety.now_ms = 5601u;
+    decision = motion_controller_step(&controller, &safety);
+    assert(decision.action == MOTION_ACTION_DISABLE);
+    assert(decision.event == MOTION_EVENT_COMPLETE);
+    assert(strcmp(decision.reason, "HOST_WATCHDOG") == 0);
+}
+
+static void test_continuous_runtime_safety_still_fails_closed(void)
+{
+    MotionController controller;
+    MotionSafetySnapshot safety = safe_disabled_snapshot(0u);
+    MotionDecision decision;
+
+    motion_controller_init(&controller);
+    (void)motion_controller_command(&controller, 'A', &safety);
+    (void)motion_controller_command(&controller, 'C', &safety);
+    safety = safe_enabled_snapshot(50u);
+    (void)motion_controller_step(&controller, &safety);
+    safety.now_ms = 51u;
+    safety.mos_temperature_c = 60u;
+    decision = motion_controller_step(&controller, &safety);
+    assert(decision.action == MOTION_ACTION_VELOCITY);
+    assert(decision.velocity_step == 0);
+    assert(decision.event == MOTION_EVENT_SAFETY_TRIP);
+}
+
 int main(void)
 {
     test_normalizes_commands_and_ignores_line_endings();
@@ -489,5 +581,8 @@ int main(void)
     test_runtime_safety_trips_zero_then_disable();
     test_transmit_failure_requests_zero_then_disable();
     test_failed_zero_command_immediately_falls_back_to_disable();
+    test_negative_pulse_uses_negative_two_step();
+    test_continuous_ramp_clamp_keepalive_and_watchdog();
+    test_continuous_runtime_safety_still_fails_closed();
     return 0;
 }
