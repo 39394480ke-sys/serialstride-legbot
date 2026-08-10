@@ -26,18 +26,18 @@ void serial_logger_service(SerialLogger *logger)
 {
     const uint8_t *record;
     uint16_t length;
-    bool accepted;
+    uint8_t result;
 
     if (logger == NULL ||
         !motion_log_queue_peek(&logger->queue, &record, &length))
         return;
     memcpy(logger->tx_buffers[logger->tx_buffer_index], record, length);
-    accepted = CDC_Transmit_HS(
-                   logger->tx_buffers[logger->tx_buffer_index], length) ==
-               USBD_OK;
-    motion_log_queue_finish_attempt(&logger->queue, accepted,
+    result = CDC_Transmit_HS(
+        logger->tx_buffers[logger->tx_buffer_index], length);
+    if (result == USBD_BUSY) return;
+    motion_log_queue_finish_attempt(&logger->queue, result == USBD_OK,
                                     &logger->dropped);
-    if (accepted) logger->tx_buffer_index ^= 1u;
+    if (result == USBD_OK) logger->tx_buffer_index ^= 1u;
 }
 
 uint32_t serial_logger_dropped(const SerialLogger *logger)

@@ -15,6 +15,8 @@
 #include "power_quiet_controller.h"
 #include "safety_manager.h"
 #include "serial_logger.h"
+#include "single_leg_bringup.h"
+#include "single_leg_trajectory.h"
 #include "usb_command_queue.h"
 #include "usb_device.h"
 
@@ -34,6 +36,7 @@ static const uint8_t parameter_registers[] = {
 };
 
 static ParallelController parallel_motion;
+static SingleLegTrajectory phase10_trajectory;
 static SerialLogger serial_logger;
 
 static bool enqueue_log(MotionLogQueue *queue, uint32_t *dropped_logs,
@@ -70,6 +73,7 @@ static void power_off(PowerQuietController *power, bool *probe_active,
     dm4310_controller_init(joint_motion);
     motion_controller_init(wheel_motion);
     parallel_controller_init(&parallel_motion);
+    single_leg_trajectory_init(&phase10_trajectory);
 }
 
 static void emergency_stop(MotorManager *manager,
@@ -98,6 +102,31 @@ static void enqueue_power_status(MotionLogQueue *queue,
                    probe_active ? "READ_ONLY" : "QUIET",
                    power_quiet_state_name(power->state));
     (void)enqueue_log(queue, dropped_logs, record);
+}
+
+static void execute_power_command(PowerQuietController *power, uint8_t command,
+                                  uint32_t now_ms, bool probe_active,
+                                  MotionLogQueue *queue,
+                                  uint32_t *dropped_logs)
+{
+    PowerQuietDecision decision =
+        power_quiet_controller_command(power, command, now_ms);
+
+    if (decision.set_output) board_motor_power_set(decision.output_on);
+    if (decision.event == POWER_QUIET_EVENT_ARMED)
+        (void)enqueue_log(queue, dropped_logs,
+                          "POWER_ARMED EXPIRES_MS=10000\r\n");
+    else if (decision.event == POWER_QUIET_EVENT_ON)
+        (void)enqueue_log(queue, dropped_logs,
+                          "POWER_ON_REQUESTED MODE=QUIET\r\n");
+    else if (decision.event == POWER_QUIET_EVENT_REJECTED) {
+        char record[128];
+
+        (void)snprintf(record, sizeof(record),
+                       "POWER_REJECTED REASON=%s\r\n", decision.reason);
+        (void)enqueue_log(queue, dropped_logs, record);
+    }
+    enqueue_power_status(queue, dropped_logs, power, probe_active);
 }
 
 static size_t append_motor_status(char *record, size_t capacity, size_t used,
@@ -130,12 +159,14 @@ static size_t append_motor_status(char *record, size_t capacity, size_t used,
 
     written = snprintf(
         record + used, capacity - used,
-        "[%s] ONLINE=%u ID=%u MST=%u ST=%s AGE=%s SW=%s MODE=%u "
+        "[TS_MS=%lu %s] ONLINE=%u ID=%u MST=%u ST=%s AGE=%s LAST_RX_MS=%lu SW=%s MODE=%u "
         "LIM=%s/%s/%s PARAM_OK=%u RX=%lu POS=%s V=%s T=%s "
         "TEMP=%u/%u TXF=%lu\r\n",
-        motor_role_name(role), motor->online, motor->can_id, motor->mst_id,
+        (unsigned long)now_ms, motor_role_name(role), motor->online,
+        motor->can_id, motor->mst_id,
         motor->feedback_valid ? motor_state_name(motor) : "NO_FEEDBACK",
-        age, motor->software_version[0] != '\0' ? motor->software_version
+        age, (unsigned long)motor->last_rx_ms,
+        motor->software_version[0] != '\0' ? motor->software_version
                                                 : "UNKNOWN",
         motor->control_mode, p_max, v_max, t_max,
         motor_manager_parameters_valid(manager, role),
@@ -207,7 +238,8 @@ static bool any_motion_active(const Dm4310Controller *joint_motion,
 {
     return joint_motion_active(joint_motion) ||
            wheel_motion_active(wheel_motion) ||
-           parallel_controller_active(&parallel_motion);
+           parallel_controller_active(&parallel_motion) ||
+           single_leg_trajectory_active(&phase10_trajectory);
 }
 
 static bool execute_parallel_decision(
@@ -276,6 +308,7 @@ static void enqueue_motion_log(MotionLogQueue *queue, uint32_t *dropped_logs,
 
 static bool execute_joint_decision(
     Dm4310MotionDecision decision, MotorRole role,
+    int32_t mit_kd_milli,
     MotorManager *manager, PowerQuietController *power,
     Dm4310Controller *joint_motion, MotionController *wheel_motion,
     bool *probe_active, MotionLogQueue *queue, uint32_t *dropped_logs)
@@ -290,7 +323,7 @@ static bool execute_joint_decision(
     if (success && decision.send_mit)
         success = dm4310_build_mit_command_for(
                       motor_role_can_id(role), 0, decision.target_velocity_millirad_s,
-                      0, MIT_KD_MILLI, 0, &frame) &&
+                      0, mit_kd_milli, 0, &frame) &&
                   motor_manager_transmit(manager, role, frame.id, frame.data,
                                          frame.dlc);
     if (success && decision.send_disable)
@@ -367,11 +400,289 @@ static bool execute_wheel_decision(
     return success;
 }
 
+static SingleLegMotorSnapshot single_leg_snapshot(
+    const MotorManager *manager, MotorRole role, bool probe_active,
+    const Can1Status *can_status, bool can_status_valid, uint32_t now_ms)
+{
+    const MotorState *motor = motor_manager_get_const(manager, role);
+
+    if (motor == NULL) return (SingleLegMotorSnapshot){0};
+    return (SingleLegMotorSnapshot){
+        .online = motor->online,
+        .feedback_valid = motor->feedback_valid,
+        .parameters_valid = motor_manager_parameters_valid(manager, role),
+        .powered = board_motor_power_is_enabled(),
+        .probe_active = probe_active,
+        .can_active = can_status_valid && !can_status->warning &&
+                      !can_status->error_passive && !can_status->bus_off,
+        .motor_state = motor->state,
+        .position_millirad = motor->position_millirad,
+        .velocity_millirad_s = motor->velocity_millirad_s,
+        .torque_millinewton_m = motor->torque_millinewton_m,
+        .mos_temperature_c = motor->mos_temperature_c,
+        .rotor_temperature_c = motor->rotor_temperature_c,
+        .feedback_age_ms = motor->feedback_valid
+                               ? now_ms - motor->last_rx_ms
+                               : UINT32_MAX,
+    };
+}
+
+static int32_t absolute_i32(int32_t value)
+{
+    return value < 0 ? -value : value;
+}
+
+static SingleLegTrajectorySafety phase10_safety_snapshot(
+    const MotorManager *manager, bool probe_active,
+    const Can1Status *can_status, bool can_status_valid, uint32_t now_ms)
+{
+    const MotorState *joint_a = motor_manager_get_const(
+        manager, MOTOR_ROLE_JOINT_A);
+    const MotorState *joint_b = motor_manager_get_const(
+        manager, MOTOR_ROLE_JOINT_B);
+    const MotorState *wheel = motor_manager_get_const(
+        manager, MOTOR_ROLE_WHEEL);
+    SingleLegTrajectorySafety safety = {
+        .now_ms = now_ms,
+        .powered = board_motor_power_is_enabled(),
+        .probe_active = probe_active,
+        .parameters_valid = true,
+        .feedback_fresh = true,
+        .joints_disabled = true,
+        .joints_enabled = true,
+        .wheel_disabled = wheel != NULL && wheel->state == 0u,
+        .start_speed_zero = true,
+        .runtime_speed_safe = true,
+        .runtime_torque_safe = true,
+        .temperature_safe = true,
+        .can_active = can_status_valid && !can_status->warning &&
+                      !can_status->error_passive && !can_status->bus_off,
+        .states_normal = true,
+        .joint_a_position_millirad = joint_a != NULL
+                                         ? joint_a->position_millirad : 0,
+        .joint_b_position_millirad = joint_b != NULL
+                                         ? joint_b->position_millirad : 0,
+    };
+    MotorRole role;
+
+    for (role = MOTOR_ROLE_JOINT_A; role < MOTOR_ROLE_COUNT; ++role) {
+        const MotorState *motor = motor_manager_get_const(manager, role);
+
+        if (motor == NULL) {
+            safety.parameters_valid = false;
+            safety.feedback_fresh = false;
+            safety.states_normal = false;
+            continue;
+        }
+        safety.parameters_valid &=
+            motor_manager_parameters_valid(manager, role);
+        safety.feedback_fresh &= motor->online && motor->feedback_valid &&
+                                 now_ms - motor->last_rx_ms <= 100u;
+        safety.temperature_safe &= motor->mos_temperature_c < 60u &&
+                                   motor->rotor_temperature_c < 60u;
+        safety.states_normal &= motor->state <= 1u;
+        if (role != MOTOR_ROLE_WHEEL) {
+            safety.joints_disabled &= motor->state == 0u;
+            safety.joints_enabled &= motor->state == 1u;
+            safety.start_speed_zero &=
+                absolute_i32(motor->velocity_millirad_s) < 100;
+            safety.runtime_speed_safe &=
+                absolute_i32(motor->velocity_millirad_s) <= 200;
+            safety.runtime_torque_safe &=
+                absolute_i32(motor->torque_millinewton_m) <=
+                    SINGLE_LEG_TORQUE_LIMIT_MILLINEWTON_M;
+        }
+    }
+    return safety;
+}
+
+static bool phase10_send_joint_command(MotorManager *manager, MotorRole role,
+                                       int32_t position_millirad,
+                                       int32_t velocity_millirad_s)
+{
+    Dm4310CanFrame frame;
+
+    return dm4310_build_mit_command_for(
+               motor_role_can_id(role), position_millirad,
+               velocity_millirad_s, SINGLE_LEG_TRAJECTORY_KP_MILLI,
+               SINGLE_LEG_TRAJECTORY_KD_MILLI, 0, &frame) &&
+           motor_manager_transmit(manager, role, frame.id, frame.data,
+                                  frame.dlc);
+}
+
+static bool phase10_send_enable(MotorManager *manager, MotorRole role)
+{
+    Dm4310CanFrame frame;
+
+    return dm4310_build_enable_command_for(motor_role_can_id(role), &frame) &&
+           motor_manager_transmit(manager, role, frame.id, frame.data,
+                                  frame.dlc);
+}
+
+static bool execute_phase10_decision(
+    SingleLegTrajectoryDecision decision, MotorManager *manager,
+    PowerQuietController *power, bool *probe_active,
+    Dm4310Controller *joint_motion, MotionController *wheel_motion,
+    MotionLogQueue *queue, uint32_t *dropped_logs)
+{
+    bool success = true;
+    char record[256];
+
+    if (decision.send_enable_joints)
+        success = phase10_send_enable(manager, MOTOR_ROLE_JOINT_A) &&
+                  phase10_send_enable(manager, MOTOR_ROLE_JOINT_B);
+    if (success && decision.send_position_joints)
+        success = phase10_send_joint_command(
+                      manager, MOTOR_ROLE_JOINT_A,
+                      decision.joint_a_target_millirad,
+                      decision.joint_a_velocity_millirad_s) &&
+                  phase10_send_joint_command(
+                      manager, MOTOR_ROLE_JOINT_B,
+                      decision.joint_b_target_millirad,
+                      decision.joint_b_velocity_millirad_s);
+    if (success && decision.send_disable_all)
+        success = motor_manager_send_disable_all(manager);
+    if (!success || decision.cut_power) {
+        (void)motor_manager_send_disable_all(manager);
+        power_off(power, probe_active, joint_motion, wheel_motion);
+    }
+    if (!success) {
+        (void)enqueue_log(queue, dropped_logs,
+                          "[PHASE10] EVENT=TX_FAILURE STOP_ALL POWER_OFF\r\n");
+        return false;
+    }
+    if (decision.event != SINGLE_LEG_TRAJECTORY_EVENT_NONE) {
+        const char *event =
+            decision.event == SINGLE_LEG_TRAJECTORY_EVENT_ARMED ? "ARMED" :
+            decision.event == SINGLE_LEG_TRAJECTORY_EVENT_ENABLE_WAIT ? "ENABLE_WAIT" :
+            decision.event == SINGLE_LEG_TRAJECTORY_EVENT_RUNNING ? "RUNNING" :
+            decision.event == SINGLE_LEG_TRAJECTORY_EVENT_HOLD ? "HOLD" :
+            decision.event == SINGLE_LEG_TRAJECTORY_EVENT_DISABLE_WAIT ? "DISABLE_WAIT" :
+            decision.event == SINGLE_LEG_TRAJECTORY_EVENT_COMPLETE ? "COMPLETE" :
+            decision.event == SINGLE_LEG_TRAJECTORY_EVENT_REJECTED ? "REJECTED" :
+            decision.event == SINGLE_LEG_TRAJECTORY_EVENT_SAFETY_TRIP ? "SAFETY_TRIP" :
+            decision.event == SINGLE_LEG_TRAJECTORY_EVENT_ARM_TIMEOUT ? "ARM_TIMEOUT" :
+            "EVENT";
+
+        (void)snprintf(
+            record, sizeof(record),
+            "[PHASE10 TS_MS=%lu] EVENT=%s TARGET=%s A_RAW_MRAD=%ld "
+            "B_RAW_MRAD=%ld%s%s\r\n",
+            (unsigned long)HAL_GetTick(), event,
+            single_leg_trajectory_target_name(
+                decision.target_valid ? decision.target
+                                      : phase10_trajectory.target),
+            (long)decision.joint_a_target_millirad,
+            (long)decision.joint_b_target_millirad,
+            decision.reason != NULL ? " REASON=" : "",
+            decision.reason != NULL ? decision.reason : "");
+        (void)enqueue_log(queue, dropped_logs, record);
+    }
+    return true;
+}
+
+static void enqueue_raw_status(MotionLogQueue *queue, uint32_t *dropped_logs,
+                               const MotorManager *manager, uint32_t now_ms)
+{
+    MotorRole role;
+
+    for (role = MOTOR_ROLE_JOINT_A; role < MOTOR_ROLE_COUNT; ++role) {
+        const MotorState *motor = motor_manager_get_const(manager, role);
+        char position[16];
+        char relative_position[16];
+        char velocity[16];
+        char torque[16];
+        char record[256];
+        int32_t relative_millirad = 0;
+        bool relative_valid;
+
+        if (motor == NULL) continue;
+        relative_valid = single_leg_calibrated_position_millirad(
+            role, motor->position_millirad, &relative_millirad);
+        format_milli(position, sizeof(position), motor->position_millirad);
+        format_milli(relative_position, sizeof(relative_position),
+                     relative_millirad);
+        format_milli(velocity, sizeof(velocity), motor->velocity_millirad_s);
+        format_milli(torque, sizeof(torque), motor->torque_millinewton_m);
+        (void)snprintf(
+            record, sizeof(record),
+            "[RAW TS_MS=%lu ROLE=%s ID=%u] ONLINE=%u STATE=%s "
+            "RAW_POS_RAD=%s Q_RAD=%s MECH_DIR=%+d VEL_RAD_S=%s "
+            "TORQUE_NM=%s "
+            "TEMP_C=%u/%u "
+            "LAST_RX_MS=%lu AGE_MS=%lu\r\n",
+            (unsigned long)now_ms, motor_role_name(role), motor->can_id,
+            motor->online,
+            motor->feedback_valid ? motor_state_name(motor) : "NO_FEEDBACK",
+            motor->feedback_valid ? position : "NA",
+            motor->feedback_valid && relative_valid ? relative_position : "NA",
+            (int)single_leg_joint_direction(role),
+            motor->feedback_valid ? velocity : "NA",
+            motor->feedback_valid ? torque : "NA",
+            motor->feedback_valid ? motor->mos_temperature_c : 0u,
+            motor->feedback_valid ? motor->rotor_temperature_c : 0u,
+            (unsigned long)motor->last_rx_ms,
+            (unsigned long)(motor->feedback_valid
+                                ? now_ms - motor->last_rx_ms
+                                : UINT32_MAX));
+        (void)enqueue_log(queue, dropped_logs, record);
+    }
+}
+
+static void enqueue_single_leg_result(MotionLogQueue *queue,
+                                      uint32_t *dropped_logs,
+                                      uint32_t now_ms, const char *command,
+                                      bool accepted, const char *reason)
+{
+    char record[224];
+
+    (void)snprintf(record, sizeof(record),
+                   "[SINGLE_LEG TS_MS=%lu] COMMAND=%s RESULT=%s%s%s\r\n",
+                   (unsigned long)now_ms, command,
+                   accepted ? "ACCEPTED" : "REJECTED",
+                   reason != NULL ? " REASON=" : "",
+                   reason != NULL ? reason : "");
+    (void)enqueue_log(queue, dropped_logs, record);
+}
+
+static void enqueue_pose_capture(MotionLogQueue *queue,
+                                 uint32_t *dropped_logs,
+                                 const SingleLegBringup *bringup,
+                                 SingleLegPose pose)
+{
+    const SingleLegPoseCapture *capture = &bringup->poses[pose];
+    char joint_a[16];
+    char joint_b[16];
+    char q_a[16];
+    char q_b[16];
+    char record[224];
+    int32_t q_a_millirad = 0;
+    int32_t q_b_millirad = 0;
+
+    format_milli(joint_a, sizeof(joint_a), capture->joint_a_raw_millirad);
+    format_milli(joint_b, sizeof(joint_b), capture->joint_b_raw_millirad);
+    (void)single_leg_calibrated_position_millirad(
+        MOTOR_ROLE_JOINT_A, capture->joint_a_raw_millirad, &q_a_millirad);
+    (void)single_leg_calibrated_position_millirad(
+        MOTOR_ROLE_JOINT_B, capture->joint_b_raw_millirad, &q_b_millirad);
+    format_milli(q_a, sizeof(q_a), q_a_millirad);
+    format_milli(q_b, sizeof(q_b), q_b_millirad);
+    (void)snprintf(
+        record, sizeof(record),
+        "[CAPTURE TS_MS=%lu] POSE=%s JOINT_A_RAW_RAD=%s "
+        "JOINT_B_RAW_RAD=%s Q_A_RAD=%s Q_B_RAD=%s STORAGE=RAM_ONLY\r\n",
+        (unsigned long)capture->captured_at_ms, single_leg_pose_name(pose),
+        joint_a, joint_b, q_a, q_b);
+    (void)enqueue_log(queue, dropped_logs, record);
+}
+
 int main(void)
 {
     PowerQuietController power;
     Dm4310Controller joint_motion;
     MotionController wheel_motion;
+    SingleLegBringup single_leg;
+    SingleLegCommandParser single_leg_parser;
     Phase1Monitor monitor;
     MotorManager motor_manager;
     bool can1_ok;
@@ -398,7 +709,10 @@ int main(void)
     power_quiet_controller_init(&power);
     dm4310_controller_init(&joint_motion);
     motion_controller_init(&wheel_motion);
+    single_leg_bringup_init(&single_leg);
+    single_leg_command_parser_init(&single_leg_parser);
     parallel_controller_init(&parallel_motion);
+    single_leg_trajectory_init(&phase10_trajectory);
     motor_manager_init(&motor_manager);
     serial_logger_init(&serial_logger);
     usb_command_queue_init();
@@ -419,16 +733,295 @@ int main(void)
         motor_manager_receive(&motor_manager, now_ms, loop_period_ms);
         motor_manager_update_online(&motor_manager, now_ms);
         can_status_valid = can1_ok && can_bus_status(&can_status);
+        if (!board_motor_power_is_enabled())
+            single_leg_bringup_invalidate_anchor(&single_leg);
 
-        if (usb_command_queue_take_emergency_stop())
+        if (usb_command_queue_take_emergency_stop()) {
             emergency_stop(&motor_manager, &power, &probe_active, &joint_motion,
                            &wheel_motion, &serial_logger.queue, &dropped_logs);
+            selected = MOTOR_ROLE_COUNT;
+            parallel_selected = false;
+            single_leg_bringup_init(&single_leg);
+            single_leg_command_parser_init(&single_leg_parser);
+        }
 
         for (command_count = 0u; command_count < USB_COMMANDS_PER_LOOP;
              ++command_count) {
             uint8_t command;
 
             if (!usb_command_queue_pop(&command)) break;
+            if ((command >= (uint8_t)'a' && command <= (uint8_t)'z') ||
+                command == (uint8_t)'-' || single_leg_parser.length > 0u ||
+                single_leg_parser.overflow) {
+                SingleLegCommand word_command;
+                SingleLegParseResult parse_result =
+                    single_leg_command_parser_feed(&single_leg_parser, command,
+                                                   &word_command);
+
+                if (parse_result == SINGLE_LEG_PARSE_PENDING) continue;
+                if (parse_result == SINGLE_LEG_PARSE_ERROR) {
+                    enqueue_single_leg_result(
+                        &serial_logger.queue, &dropped_logs, now_ms,
+                        "invalid", false, "UNKNOWN_OR_MALFORMED_COMMAND");
+                    continue;
+                }
+                if (word_command == SINGLE_LEG_COMMAND_STATUS) {
+                    command = (uint8_t)'S';
+                } else if (word_command == SINGLE_LEG_COMMAND_POWER_ARM) {
+                    execute_power_command(&power, (uint8_t)'A', now_ms,
+                                          probe_active, &serial_logger.queue,
+                                          &dropped_logs);
+                    continue;
+                } else if (word_command == SINGLE_LEG_COMMAND_POWER_ON) {
+                    execute_power_command(&power, (uint8_t)'P', now_ms,
+                                          probe_active, &serial_logger.queue,
+                                          &dropped_logs);
+                    continue;
+                } else if (word_command == SINGLE_LEG_COMMAND_PROBE) {
+                    command = (uint8_t)'R';
+                } else if (word_command == SINGLE_LEG_COMMAND_SELECT_A ||
+                           word_command == SINGLE_LEG_COMMAND_SELECT_B ||
+                           word_command == SINGLE_LEG_COMMAND_SELECT_WHEEL) {
+                    command = word_command == SINGLE_LEG_COMMAND_SELECT_A
+                                  ? (uint8_t)'1'
+                              : word_command == SINGLE_LEG_COMMAND_SELECT_B
+                                  ? (uint8_t)'2'
+                                  : (uint8_t)'3';
+                } else if (word_command == SINGLE_LEG_COMMAND_STOP_ALL) {
+                    emergency_stop(&motor_manager, &power, &probe_active,
+                                   &joint_motion, &wheel_motion,
+                                   &serial_logger.queue, &dropped_logs);
+                    selected = MOTOR_ROLE_COUNT;
+                    parallel_selected = false;
+                    single_leg_bringup_init(&single_leg);
+                    enqueue_single_leg_result(
+                        &serial_logger.queue, &dropped_logs, now_ms,
+                        single_leg_command_name(word_command), true, NULL);
+                    continue;
+                } else if (word_command == SINGLE_LEG_COMMAND_DISABLE_ALL) {
+                    bool accepted = !board_motor_power_is_enabled() ||
+                                    motor_manager_send_disable_all(&motor_manager);
+
+                    dm4310_controller_init(&joint_motion);
+                    motion_controller_init(&wheel_motion);
+                    parallel_controller_init(&parallel_motion);
+                    single_leg_trajectory_init(&phase10_trajectory);
+                    single_leg_bringup_disarm(&single_leg);
+                    if (!accepted) {
+                        emergency_stop(
+                            &motor_manager, &power, &probe_active,
+                            &joint_motion, &wheel_motion,
+                            &serial_logger.queue, &dropped_logs);
+                        selected = MOTOR_ROLE_COUNT;
+                        parallel_selected = false;
+                        single_leg_bringup_init(&single_leg);
+                    }
+                    enqueue_single_leg_result(
+                        &serial_logger.queue, &dropped_logs, now_ms,
+                        single_leg_command_name(word_command), accepted,
+                        accepted ? NULL : "CAN_TX_FAILED");
+                    continue;
+                } else if (word_command == SINGLE_LEG_COMMAND_READ_RAW) {
+                    enqueue_raw_status(&serial_logger.queue, &dropped_logs,
+                                       &motor_manager, now_ms);
+                    continue;
+                } else if (word_command == SINGLE_LEG_COMMAND_CAPTURE_STAND ||
+                           word_command == SINGLE_LEG_COMMAND_CAPTURE_CROUCH ||
+                           word_command == SINGLE_LEG_COMMAND_CAPTURE_EXTEND) {
+                    SingleLegPose pose =
+                        word_command == SINGLE_LEG_COMMAND_CAPTURE_STAND
+                            ? SINGLE_LEG_POSE_STAND
+                        : word_command == SINGLE_LEG_COMMAND_CAPTURE_CROUCH
+                            ? SINGLE_LEG_POSE_CROUCH
+                            : SINGLE_LEG_POSE_EXTEND;
+                    SingleLegMotorSnapshot joint_a = single_leg_snapshot(
+                        &motor_manager, MOTOR_ROLE_JOINT_A, probe_active,
+                        &can_status, can_status_valid, now_ms);
+                    SingleLegMotorSnapshot joint_b = single_leg_snapshot(
+                        &motor_manager, MOTOR_ROLE_JOINT_B, probe_active,
+                        &can_status, can_status_valid, now_ms);
+                    const char *reason = NULL;
+                    bool accepted = single_leg_bringup_capture(
+                        &single_leg, pose, &joint_a, &joint_b, now_ms,
+                        &reason);
+
+                    enqueue_single_leg_result(
+                        &serial_logger.queue, &dropped_logs, now_ms,
+                        single_leg_command_name(word_command), accepted,
+                        reason);
+                    if (accepted)
+                        enqueue_pose_capture(&serial_logger.queue,
+                                             &dropped_logs, &single_leg, pose);
+                    continue;
+                } else if (word_command ==
+                               SINGLE_LEG_COMMAND_PHASE10_ARM ||
+                           word_command == SINGLE_LEG_COMMAND_MOVE_STAND ||
+                           word_command ==
+                               SINGLE_LEG_COMMAND_MOVE_MID_CROUCH ||
+                           word_command ==
+                               SINGLE_LEG_COMMAND_MOVE_MID_EXTEND) {
+                    SingleLegTrajectorySafety safety =
+                        phase10_safety_snapshot(
+                            &motor_manager, probe_active, &can_status,
+                            can_status_valid, now_ms);
+                    SingleLegTrajectoryDecision trajectory_decision;
+
+                    if (word_command == SINGLE_LEG_COMMAND_PHASE10_ARM) {
+                        selected = MOTOR_ROLE_COUNT;
+                        parallel_selected = false;
+                        single_leg_bringup_init(&single_leg);
+                        trajectory_decision = single_leg_trajectory_arm(
+                            &phase10_trajectory, &safety);
+                    } else {
+                        SingleLegTrajectoryTarget target =
+                            word_command == SINGLE_LEG_COMMAND_MOVE_STAND
+                                ? SINGLE_LEG_TARGET_STAND
+                            : word_command ==
+                                  SINGLE_LEG_COMMAND_MOVE_MID_CROUCH
+                                ? SINGLE_LEG_TARGET_MID_CROUCH
+                                : SINGLE_LEG_TARGET_MID_EXTEND;
+
+                        trajectory_decision = single_leg_trajectory_start(
+                            &phase10_trajectory, target, &safety);
+                    }
+                    (void)execute_phase10_decision(
+                        trajectory_decision, &motor_manager, &power,
+                        &probe_active, &joint_motion, &wheel_motion,
+                        &serial_logger.queue, &dropped_logs);
+                    continue;
+                } else if (word_command == SINGLE_LEG_COMMAND_ARM) {
+                    const char *reason = NULL;
+                    SingleLegMotorSnapshot snapshot = single_leg_snapshot(
+                        &motor_manager, single_leg.selected, probe_active,
+                        &can_status, can_status_valid, now_ms);
+                    bool accepted = single_leg_bringup_arm(
+                        &single_leg, &snapshot, now_ms, &reason);
+                    char record[224];
+
+                    enqueue_single_leg_result(
+                        &serial_logger.queue, &dropped_logs, now_ms,
+                        single_leg_command_name(word_command), accepted,
+                        reason);
+                    if (accepted) {
+                        (void)snprintf(
+                            record, sizeof(record),
+                            "[SINGLE_LEG TS_MS=%lu] ARMED ROLE=%s "
+                            "EXPIRES_MS=%u ANCHOR_MRAD=%ld "
+                            "TEMP_LIMITS_MRAD=%ld/%ld "
+                            "LIMIT_SOURCE=SOFT_PLUS_COMMISSIONING_ANCHOR\r\n",
+                            (unsigned long)now_ms,
+                            motor_role_name(single_leg.selected),
+                            SINGLE_LEG_ARM_WINDOW_MS,
+                            (long)single_leg.anchor_millirad,
+                            (long)single_leg.commissioning_min_millirad,
+                            (long)single_leg.commissioning_max_millirad);
+                        (void)enqueue_log(&serial_logger.queue, &dropped_logs,
+                                          record);
+                    }
+                    continue;
+                } else if (word_command == SINGLE_LEG_COMMAND_JOG_POSITIVE ||
+                           word_command == SINGLE_LEG_COMMAND_JOG_NEGATIVE) {
+                    int8_t direction =
+                        word_command == SINGLE_LEG_COMMAND_JOG_POSITIVE ? 1 : -1;
+                    SingleLegMotorSnapshot snapshot = single_leg_snapshot(
+                        &motor_manager, single_leg.selected, probe_active,
+                        &can_status, can_status_valid, now_ms);
+                    const char *reason = NULL;
+                    bool accepted = single_leg_bringup_request_jog(
+                        &single_leg, &snapshot, direction, now_ms, &reason);
+
+                    if (accepted && single_leg.selected == MOTOR_ROLE_WHEEL) {
+                        MotionSafetySnapshot safety =
+                            safety_manager_wheel_snapshot(
+                                &motor_manager, &can_status, can_status_valid,
+                                now_ms);
+                        MotionDecision arm_decision;
+                        MotionDecision start_decision;
+
+                        accepted = motion_controller_set_pulse_profile(
+                            &wheel_motion, SINGLE_LEG_WHEEL_JOG_STEP,
+                            SINGLE_LEG_WHEEL_JOG_DURATION_MS);
+                        if (accepted) {
+                            arm_decision = motion_controller_command(
+                                &wheel_motion, (uint8_t)'A', &safety);
+                            accepted = execute_wheel_decision(
+                                arm_decision, &motor_manager, &power,
+                                &joint_motion, &wheel_motion, &probe_active,
+                                &serial_logger.queue, &dropped_logs);
+                        }
+                        if (accepted) {
+                            start_decision = motion_controller_command(
+                                &wheel_motion,
+                                direction > 0 ? (uint8_t)'G' : (uint8_t)'B',
+                                &safety);
+                            accepted = execute_wheel_decision(
+                                start_decision, &motor_manager, &power,
+                                &joint_motion, &wheel_motion, &probe_active,
+                                &serial_logger.queue, &dropped_logs);
+                        }
+                    } else if (accepted) {
+                        Dm4310SafetySnapshot safety =
+                            safety_manager_joint_snapshot(
+                                &motor_manager, single_leg.selected,
+                                &can_status, can_status_valid, probe_active,
+                                now_ms);
+                        Dm4310MotionDecision arm_decision;
+                        Dm4310MotionDecision start_decision;
+                        int32_t jog_velocity_millirad_s =
+                            single_leg.selected == MOTOR_ROLE_JOINT_A
+                                ? SINGLE_LEG_JOINT_A_JOG_VELOCITY_MILLIRAD_S
+                                : SINGLE_LEG_JOINT_B_JOG_VELOCITY_MILLIRAD_S;
+                        uint32_t jog_duration_ms =
+                            single_leg.selected == MOTOR_ROLE_JOINT_A
+                                ? SINGLE_LEG_JOINT_A_JOG_DURATION_MS
+                                : SINGLE_LEG_JOINT_B_JOG_DURATION_MS;
+                        int32_t jog_kd_milli =
+                            single_leg.selected == MOTOR_ROLE_JOINT_A
+                                ? SINGLE_LEG_JOINT_A_JOG_KD_MILLI
+                                : SINGLE_LEG_JOINT_B_JOG_KD_MILLI;
+
+                        accepted = single_leg_bringup_jog_profile(
+                            &single_leg, &snapshot,
+                            jog_velocity_millirad_s, jog_duration_ms,
+                            &jog_velocity_millirad_s, &jog_duration_ms);
+                        if (!accepted) reason = "JOG_TARGET_LIMIT";
+                        if (accepted)
+                            accepted = dm4310_controller_set_pulse_profile(
+                                &joint_motion, jog_velocity_millirad_s,
+                                jog_duration_ms);
+                        if (accepted) {
+                            arm_decision = dm4310_controller_command(
+                                &joint_motion, (uint8_t)'A', &safety);
+                            accepted = execute_joint_decision(
+                                arm_decision, single_leg.selected,
+                                jog_kd_milli,
+                                &motor_manager, &power, &joint_motion,
+                                &wheel_motion, &probe_active,
+                                &serial_logger.queue, &dropped_logs);
+                        }
+                        if (accepted) {
+                            start_decision = dm4310_controller_command(
+                                &joint_motion,
+                                direction > 0 ? (uint8_t)'G' : (uint8_t)'B',
+                                &safety);
+                            accepted = execute_joint_decision(
+                                start_decision, single_leg.selected,
+                                jog_kd_milli,
+                                &motor_manager, &power, &joint_motion,
+                                &wheel_motion, &probe_active,
+                                &serial_logger.queue, &dropped_logs);
+                        }
+                    }
+                    if (!accepted && reason == NULL)
+                        reason = "MOTION_START_FAILED";
+                    if (!accepted) single_leg_bringup_disarm(&single_leg);
+                    enqueue_single_leg_result(
+                        &serial_logger.queue, &dropped_logs, now_ms,
+                        single_leg_command_name(word_command), accepted,
+                        reason);
+                    continue;
+                }
+            }
             if (command >= (uint8_t)'a' && command <= (uint8_t)'z')
                 command = (uint8_t)(command - ((uint8_t)'a' - (uint8_t)'A'));
             if (command == (uint8_t)'\r' || command == (uint8_t)'\n') continue;
@@ -438,6 +1031,7 @@ int main(void)
                                &wheel_motion, &serial_logger.queue, &dropped_logs);
                 selected = MOTOR_ROLE_COUNT;
                 parallel_selected = false;
+                single_leg_bringup_init(&single_leg);
                 continue;
             }
             if (command == (uint8_t)'S') {
@@ -447,27 +1041,8 @@ int main(void)
                 continue;
             }
             if (power.state != POWER_QUIET_ON) {
-                PowerQuietDecision decision =
-                    power_quiet_controller_command(&power, command, now_ms);
-
-                if (decision.set_output)
-                    board_motor_power_set(decision.output_on);
-                if (decision.event == POWER_QUIET_EVENT_ARMED)
-                    (void)enqueue_log(&serial_logger.queue, &dropped_logs,
-                                      "POWER_ARMED EXPIRES_MS=10000\r\n");
-                else if (decision.event == POWER_QUIET_EVENT_ON)
-                    (void)enqueue_log(&serial_logger.queue, &dropped_logs,
-                                      "POWER_ON_REQUESTED MODE=QUIET\r\n");
-                else if (decision.event == POWER_QUIET_EVENT_REJECTED) {
-                    char record[128];
-
-                    (void)snprintf(record, sizeof(record),
-                                   "POWER_REJECTED REASON=%s\r\n",
-                                   decision.reason);
-                    (void)enqueue_log(&serial_logger.queue, &dropped_logs, record);
-                }
-                enqueue_power_status(&serial_logger.queue, &dropped_logs, &power,
-                                     probe_active);
+                execute_power_command(&power, command, now_ms, probe_active,
+                                      &serial_logger.queue, &dropped_logs);
                 continue;
             }
             if (command == (uint8_t)'R') {
@@ -476,6 +1051,7 @@ int main(void)
                                       "PROBE_REJECTED REASON=MOTION_ACTIVE\r\n");
                     continue;
                 }
+                single_leg_bringup_invalidate_anchor(&single_leg);
                 motor_manager_init(&motor_manager);
                 if (!motor_manager_send_disable_all(&motor_manager)) {
                     power_off(&power, &probe_active, &joint_motion,
@@ -510,8 +1086,17 @@ int main(void)
                     dm4310_controller_init(&joint_motion);
                     motion_controller_init(&wheel_motion);
                     parallel_controller_init(&parallel_motion);
+                    single_leg_trajectory_init(&phase10_trajectory);
                     selected = requested;
                     parallel_selected = command == (uint8_t)'4';
+                    if (parallel_selected) {
+                        single_leg_bringup_init(&single_leg);
+                    } else {
+                        const char *selection_reason = NULL;
+
+                        (void)single_leg_bringup_select(
+                            &single_leg, requested, false, &selection_reason);
+                    }
                     {
                         char record[96];
 
@@ -572,7 +1157,8 @@ int main(void)
                     &joint_motion, command, &safety);
 
                 (void)execute_joint_decision(
-                    decision, selected, &motor_manager, &power, &joint_motion,
+                    decision, selected, MIT_KD_MILLI, &motor_manager, &power,
+                    &joint_motion,
                     &wheel_motion, &probe_active, &serial_logger.queue, &dropped_logs);
             }
         }
@@ -584,6 +1170,38 @@ int main(void)
             if (decision.event == POWER_QUIET_EVENT_ARM_TIMEOUT)
                 (void)enqueue_log(&serial_logger.queue, &dropped_logs,
                                   "POWER_ARM_TIMEOUT\r\n");
+        }
+
+        if (probe_active && selected < MOTOR_ROLE_COUNT &&
+            single_leg.jog_direction != 0 &&
+            ((selected == MOTOR_ROLE_WHEEL &&
+              wheel_motion.state == MOTION_RUNNING) ||
+             (selected != MOTOR_ROLE_WHEEL &&
+              joint_motion.state == DM4310_MOTION_PULSE))) {
+            SingleLegMotorSnapshot snapshot = single_leg_snapshot(
+                &motor_manager, selected, probe_active, &can_status,
+                can_status_valid, now_ms);
+            const char *motion_fault = single_leg_bringup_motion_fault(
+                &single_leg, &snapshot);
+
+            if (motion_fault != NULL) {
+                char record[160];
+
+                (void)snprintf(
+                    record, sizeof(record),
+                    "[SINGLE_LEG TS_MS=%lu] SAFETY_TRIP=%s STOP_ALL\r\n",
+                    (unsigned long)now_ms, motion_fault);
+                (void)enqueue_log(&serial_logger.queue, &dropped_logs, record);
+                emergency_stop(&motor_manager, &power, &probe_active,
+                               &joint_motion, &wheel_motion,
+                               &serial_logger.queue, &dropped_logs);
+                selected = MOTOR_ROLE_COUNT;
+                parallel_selected = false;
+                single_leg_bringup_init(&single_leg);
+            }
+        } else if (single_leg.jog_direction != 0 &&
+                   !any_motion_active(&joint_motion, &wheel_motion)) {
+            single_leg_bringup_disarm(&single_leg);
         }
 
         if (probe_active && selected != MOTOR_ROLE_COUNT) {
@@ -608,7 +1226,13 @@ int main(void)
                     &joint_motion, &safety);
 
                 (void)execute_joint_decision(
-                    decision, selected, &motor_manager, &power, &joint_motion,
+                    decision, selected,
+                    single_leg.jog_direction != 0
+                        ? (selected == MOTOR_ROLE_JOINT_A
+                               ? SINGLE_LEG_JOINT_A_JOG_KD_MILLI
+                               : SINGLE_LEG_JOINT_B_JOG_KD_MILLI)
+                        : MIT_KD_MILLI,
+                    &motor_manager, &power, &joint_motion,
                     &wheel_motion, &probe_active, &serial_logger.queue, &dropped_logs);
             }
         }
@@ -626,10 +1250,26 @@ int main(void)
                 &probe_active, &serial_logger.queue, &dropped_logs);
         }
 
+        if (probe_active &&
+            phase10_trajectory.state != SINGLE_LEG_TRAJECTORY_DISABLED) {
+            SingleLegTrajectorySafety safety = phase10_safety_snapshot(
+                &motor_manager, probe_active, &can_status,
+                can_status_valid, now_ms);
+            SingleLegTrajectoryDecision trajectory_decision =
+                single_leg_trajectory_step(&phase10_trajectory, &safety);
+
+            (void)execute_phase10_decision(
+                trajectory_decision, &motor_manager, &power, &probe_active,
+                &joint_motion, &wheel_motion, &serial_logger.queue,
+                &dropped_logs);
+        }
+
         if (probe_active && board_motor_power_is_enabled()) {
             if ((int32_t)(now_ms - next_feedback_ms) >= 0) {
                 next_feedback_ms = now_ms + FEEDBACK_SLOT_MS;
                 if (!(parallel_controller_active(&parallel_motion) ||
+                      (single_leg_trajectory_active(&phase10_trajectory) &&
+                       (MotorRole)feedback_role != MOTOR_ROLE_WHEEL) ||
                       ((MotorRole)feedback_role == selected &&
                        any_motion_active(&joint_motion, &wheel_motion))) &&
                     !motor_manager_send_feedback_request(
@@ -644,6 +1284,7 @@ int main(void)
             if (probe_active && (int32_t)(now_ms - next_parameter_ms) >= 0) {
                 next_parameter_ms = now_ms + PARAMETER_SLOT_MS;
                 if (!(parallel_controller_active(&parallel_motion) ||
+                      single_leg_trajectory_active(&phase10_trajectory) ||
                       ((MotorRole)parameter_role == selected &&
                        any_motion_active(&joint_motion, &wheel_motion))) &&
                     !motor_manager_send_parameter_request(
@@ -676,7 +1317,9 @@ int main(void)
         feedback_fault = safety_manager_global_fault(
             &motor_manager, selected,
             any_motion_active(&joint_motion, &wheel_motion),
-            parallel_controller_active(&parallel_motion), now_ms);
+            parallel_controller_active(&parallel_motion) ||
+                single_leg_trajectory_active(&phase10_trajectory),
+            now_ms);
         if (probe_active && feedback_fault != NULL) {
             char record[128];
 
@@ -690,11 +1333,13 @@ int main(void)
         if (!boot_queued && now_ms >= BOOT_LOG_DELAY_MS) {
             const char *banner = can1_ok
                 ? "MC02_BOOT\r\nPHASE35_THREE_MOTOR_PARALLEL\r\n"
+                  "APP_MODE_SINGLE_LEG_BRINGUP\r\n"
                   "CAN1_INIT_OK BITRATE=1000000 TX=GUARDED\r\n"
                   "JOINT_A ID=6 MST_ID=3\r\n"
                   "JOINT_B ID=8 MST_ID=4\r\n"
                   "WHEEL ID=1 MST_ID=0\r\n"
                   "COMMANDS=S,A,P,R,1,2,3,4,N,G,B,X MODE4=PARALLEL\r\n"
+                  "LINE_COMMANDS=lowercase+ENTER STATUS,DISABLE,RAW,CAPTURE,SELECT,ARM,JOG,STOP\r\n"
                   "DEFAULT_POWER=OFF DEFAULT_MOTORS=DISABLED\r\n"
                 : "MC02_BOOT\r\nPHASE35_THREE_MOTOR_PARALLEL\r\n"
                   "CAN1_INIT_ERROR\r\nDEFAULT_POWER=OFF\r\n";

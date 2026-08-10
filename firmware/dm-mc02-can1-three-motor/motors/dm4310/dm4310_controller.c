@@ -15,6 +15,8 @@
 #define RUNTIME_SPEED_LIMIT_MILLIRAD_S 800
 #define RUNTIME_TORQUE_LIMIT_MILLINEWTON_M 500
 #define TEMPERATURE_LIMIT_C 60u
+#define PROFILE_VELOCITY_MAX_MILLIRAD_S 400
+#define PROFILE_DURATION_MAX_MS 2000u
 
 static Dm4310MotionDecision decision(Dm4310MotionEvent event,
                                      const char *reason)
@@ -99,8 +101,26 @@ static Dm4310MotionDecision fail_closed(Dm4310Controller *controller,
 void dm4310_controller_init(Dm4310Controller *controller)
 {
     if (controller != NULL) {
-        *controller = (Dm4310Controller){.state = DM4310_MOTION_DISABLED};
+        *controller = (Dm4310Controller){
+            .state = DM4310_MOTION_DISABLED,
+            .configured_velocity_millirad_s = MOTION_TARGET_MILLIRAD_S,
+            .configured_pulse_duration_ms = MOTION_PULSE_MS,
+        };
     }
+}
+
+bool dm4310_controller_set_pulse_profile(Dm4310Controller *controller,
+                                         int32_t velocity_millirad_s,
+                                         uint32_t duration_ms)
+{
+    if (controller == NULL || velocity_millirad_s <= 0 ||
+        velocity_millirad_s > PROFILE_VELOCITY_MAX_MILLIRAD_S ||
+        duration_ms == 0u || duration_ms > PROFILE_DURATION_MAX_MS ||
+        controller->state != DM4310_MOTION_DISABLED)
+        return false;
+    controller->configured_velocity_millirad_s = velocity_millirad_s;
+    controller->configured_pulse_duration_ms = duration_ms;
+    return true;
 }
 
 Dm4310MotionDecision dm4310_controller_command(
@@ -145,10 +165,13 @@ Dm4310MotionDecision dm4310_controller_command(
     controller->state = DM4310_MOTION_ENABLE_WAIT;
     controller->target_velocity_millirad_s =
         command == (uint8_t)'G'
-            ? MOTION_TARGET_MILLIRAD_S
-            : command == (uint8_t)'B' ? -MOTION_TARGET_MILLIRAD_S : 0;
+            ? controller->configured_velocity_millirad_s
+            : command == (uint8_t)'B'
+                  ? -controller->configured_velocity_millirad_s
+                  : 0;
     controller->pulse_duration_ms =
-        command == (uint8_t)'N' ? ZERO_SPEED_TEST_MS : MOTION_PULSE_MS;
+        command == (uint8_t)'N' ? ZERO_SPEED_TEST_MS
+                                : controller->configured_pulse_duration_ms;
     controller->phase_started_ms = safety->now_ms;
     controller->last_command_ms = safety->now_ms;
     result = decision(DM4310_EVENT_ENABLE_REQUESTED, NULL);

@@ -59,6 +59,8 @@ typedef struct {
 typedef struct {
     Dm4310MotionState state;
     int32_t target_velocity_millirad_s;
+    int32_t configured_velocity_millirad_s;
+    uint32_t configured_pulse_duration_ms;
     uint32_t pulse_duration_ms;
     uint32_t armed_at_ms;
     uint32_t phase_started_ms;
@@ -66,6 +68,9 @@ typedef struct {
 } Dm4310Controller;
 
 void dm4310_controller_init(Dm4310Controller *controller);
+bool dm4310_controller_set_pulse_profile(Dm4310Controller *controller,
+                                         int32_t velocity_millirad_s,
+                                         uint32_t duration_ms);
 Dm4310MotionDecision dm4310_controller_command(
     Dm4310Controller *controller, uint8_t command,
     const Dm4310SafetySnapshot *safety);

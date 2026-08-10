@@ -19,6 +19,9 @@
 #define START_SPEED_LIMIT_MILLIRAD_S 100
 #define RUNTIME_SPEED_LIMIT_MILLIRAD_S 800
 #define TEMPERATURE_LIMIT_C 60u
+#define RUNTIME_TORQUE_LIMIT_MILLINEWTON_M 500
+#define PROFILE_STEP_MAX 2
+#define PROFILE_DURATION_MAX_MS 1000u
 
 static MotionDecision decision(MotionAction action, MotionEvent event,
                                const char *reason, int8_t step)
@@ -36,6 +39,11 @@ static uint8_t normalize(uint8_t command)
     return command >= 'a' && command <= 'z' ? command - ('a' - 'A') : command;
 }
 
+static int32_t absolute(int32_t value)
+{
+    return value < 0 ? -value : value;
+}
+
 static const char *start_rejection(const MotionSafetySnapshot *s)
 {
     if (s->parameter_mask != PARAMETER_MASK_COMPLETE) return "PARAMETERS_INCOMPLETE";
@@ -44,6 +52,8 @@ static const char *start_rejection(const MotionSafetySnapshot *s)
     if (s->motor_state != MOTOR_DISABLED) return "STATE_NOT_DISABLED";
     if (s->velocity_millirad_s <= -START_SPEED_LIMIT_MILLIRAD_S ||
         s->velocity_millirad_s >= START_SPEED_LIMIT_MILLIRAD_S) return "SPEED_NOT_ZERO";
+    if (absolute(s->torque_millinewton_m) >
+        RUNTIME_TORQUE_LIMIT_MILLINEWTON_M) return "TORQUE_LIMIT";
     if (s->mos_temperature_c >= TEMPERATURE_LIMIT_C ||
         s->rotor_temperature_c >= TEMPERATURE_LIMIT_C) return "TEMPERATURE_LIMIT";
     if (s->can_warning || s->can_passive || s->can_bus_off) return "CAN_NOT_ACTIVE";
@@ -55,6 +65,8 @@ static const char *runtime_trip(const MotionSafetySnapshot *s, bool require_enab
     if (!s->feedback_valid || s->feedback_age_ms > RUNTIME_FEEDBACK_MAX_AGE_MS) return "FEEDBACK_STALE";
     if (s->velocity_millirad_s < -RUNTIME_SPEED_LIMIT_MILLIRAD_S ||
         s->velocity_millirad_s > RUNTIME_SPEED_LIMIT_MILLIRAD_S) return "SPEED_LIMIT";
+    if (absolute(s->torque_millinewton_m) >
+        RUNTIME_TORQUE_LIMIT_MILLINEWTON_M) return "TORQUE_LIMIT";
     if (s->mos_temperature_c >= TEMPERATURE_LIMIT_C ||
         s->rotor_temperature_c >= TEMPERATURE_LIMIT_C) return "TEMPERATURE_LIMIT";
     if (s->can_passive || s->can_bus_off) return "CAN_NOT_ACTIVE";
@@ -76,7 +88,24 @@ static MotionDecision fault_stop(MotionController *c, uint32_t now,
 void motion_controller_init(MotionController *c)
 {
     if (c == NULL) return;
-    *c = (MotionController){.state = MOTION_IDLE_DISABLED};
+    *c = (MotionController){
+        .state = MOTION_IDLE_DISABLED,
+        .configured_pulse_step = 2,
+        .configured_pulse_duration_ms = PULSE_MS,
+    };
+}
+
+bool motion_controller_set_pulse_profile(MotionController *c,
+                                         int8_t velocity_step,
+                                         uint32_t duration_ms)
+{
+    if (c == NULL || velocity_step <= 0 || velocity_step > PROFILE_STEP_MAX ||
+        duration_ms == 0u || duration_ms > PROFILE_DURATION_MAX_MS ||
+        c->state != MOTION_IDLE_DISABLED)
+        return false;
+    c->configured_pulse_step = velocity_step;
+    c->configured_pulse_duration_ms = duration_ms;
+    return true;
 }
 
 static MotionDecision request_start(MotionController *c, uint8_t command,
@@ -98,7 +127,9 @@ static MotionDecision request_start(MotionController *c, uint8_t command,
     c->phase_started_ms = s->now_ms;
     c->last_action_ms = s->now_ms;
     c->continuous_requested = command == 'C';
-    c->pulse_step = command == 'B' ? -2 : 2;
+    c->pulse_step = command == 'B' ? -c->configured_pulse_step
+                                   : c->configured_pulse_step;
+    c->pulse_duration_ms = c->configured_pulse_duration_ms;
     c->current_step = 0;
     c->target_step = 0;
     c->watchdog_stop = false;
@@ -200,7 +231,8 @@ MotionDecision motion_controller_step(MotionController *c,
     case MOTION_RUNNING:
         reason = runtime_trip(s, true);
         if (reason != NULL) return fault_stop(c, s->now_ms, MOTION_EVENT_SAFETY_TRIP, reason);
-        if (elapsed(s->now_ms, c->phase_started_ms, PULSE_MS)) {
+        if (elapsed(s->now_ms, c->phase_started_ms,
+                    c->pulse_duration_ms)) {
             c->state = MOTION_ZERO_HOLD; c->watchdog_stop = false;
             c->phase_started_ms = c->last_action_ms = s->now_ms; c->current_step = c->target_step = 0;
             return decision(MOTION_ACTION_VELOCITY, MOTION_EVENT_ZERO_HOLD, NULL, 0);

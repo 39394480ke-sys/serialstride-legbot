@@ -110,6 +110,51 @@ static void test_rejects_start_without_a_fresh_arm(void)
     assert(strcmp(decision.reason, "SEND_A_FIRST") == 0);
 }
 
+static void test_configurable_bringup_pulse_is_bounded(void)
+{
+    MotionSafetySnapshot safety = safe_disabled_snapshot(0u);
+    MotionController controller;
+    MotionDecision decision;
+
+    motion_controller_init(&controller);
+    assert(motion_controller_set_pulse_profile(&controller, 1, 300u));
+    (void)motion_controller_command(&controller, 'A', &safety);
+    decision = motion_controller_command(&controller, 'B', &safety);
+    assert(decision.velocity_step == -1);
+    safety = safe_enabled_snapshot(0u);
+    (void)motion_controller_step(&controller, &safety);
+    safety.now_ms = 300u;
+    decision = motion_controller_step(&controller, &safety);
+    assert(decision.event == MOTION_EVENT_ZERO_HOLD);
+    assert(!motion_controller_set_pulse_profile(&controller, 1, 300u));
+}
+
+static void test_wheel_torque_limit_rejects_start_and_stops_runtime(void)
+{
+    MotionSafetySnapshot safety = safe_disabled_snapshot(0u);
+    MotionController controller;
+    MotionDecision decision;
+
+    motion_controller_init(&controller);
+    (void)motion_controller_command(&controller, 'A', &safety);
+    safety.torque_millinewton_m = 501;
+    decision = motion_controller_command(&controller, 'G', &safety);
+    assert(decision.event == MOTION_EVENT_START_REJECTED);
+    assert(strcmp(decision.reason, "TORQUE_LIMIT") == 0);
+
+    safety.torque_millinewton_m = 0;
+    motion_controller_init(&controller);
+    (void)motion_controller_command(&controller, 'A', &safety);
+    (void)motion_controller_command(&controller, 'G', &safety);
+    safety = safe_enabled_snapshot(1u);
+    (void)motion_controller_step(&controller, &safety);
+    safety.now_ms = 2u;
+    safety.torque_millinewton_m = -501;
+    decision = motion_controller_step(&controller, &safety);
+    assert(decision.event == MOTION_EVENT_SAFETY_TRIP);
+    assert(strcmp(decision.reason, "TORQUE_LIMIT") == 0);
+}
+
 static void test_arm_boundary_and_one_shot_consumption(void)
 {
     MotionSafetySnapshot safety = safe_disabled_snapshot(0u);
@@ -600,6 +645,8 @@ int main(void)
 {
     test_normalizes_commands_and_ignores_line_endings();
     test_rejects_start_without_a_fresh_arm();
+    test_configurable_bringup_pulse_is_bounded();
+    test_wheel_torque_limit_rejects_start_and_stops_runtime();
     test_arm_boundary_and_one_shot_consumption();
     test_arm_timeout_handles_tick_wraparound();
     test_rejects_each_unsafe_start_condition();

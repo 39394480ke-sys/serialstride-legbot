@@ -27,6 +27,8 @@ set(USB ${ROOT}/vendor/Middlewares/ST/STM32_USB_Device_Library)
 
 add_executable(${TARGET}
     app/three_motor_bringup/main.c
+    app/single_leg_bringup/single_leg_bringup.c
+    app/single_leg_bringup/single_leg_trajectory.c
     motors/dm4310/dm4310_protocol.c
     motors/dm4310/dm4310_controller.c
     motors/h6215/h6215_protocol.c
@@ -76,6 +78,7 @@ add_executable(${TARGET}
 target_include_directories(${TARGET} PRIVATE
     app
     app/three_motor_bringup
+    app/single_leg_bringup
     drivers/can_bus
     drivers/uart
     motors/dm4310
