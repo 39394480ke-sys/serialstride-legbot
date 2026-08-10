@@ -209,3 +209,25 @@ Disabled、参数正确与 CAN 无主动错误，不单独证明运动或 `STOP 
 [`records-2026-08-09-22-20-44.json`](logs/records-2026-08-09-22-20-44.json)。
 详细阶段摘要见
 [`2026-08-09_DM-MC02_CAN1三电机Bring-up.md`](../../progress/2026-08-09_DM-MC02_CAN1三电机Bring-up.md)。
+
+## v0.2.0 单腿机械 Bring-up
+
+2026-08-10 将两台 DM4310 装入真实单腿机构，完成了机械方向识别、
+机械接触极限采集、软件限位和悬空低速双关节协同。本 Stage 按修订后的
+验收条件完成，但不将临时 `STAND` 认定为承重姿态。
+
+关键结论：
+
+- 机械伸腿为软件正方向：JOINT_A `+1`，JOINT_B `-1`；
+- 机械极限：CROUCH `A=+0.662, B=-0.951 rad`，EXTEND
+  `A=+1.354, B=-1.662 rad`；
+- 临时 STAND：`A=+1.008, B=-1.307 rad`；
+- 安全目标：MID_CROUCH `A=+0.835, B=-1.129 rad`，MID_EXTEND
+  `A=+1.181, B=-1.484 rad`；
+- 24 V 上下电两次读数均为 `A=+1.054, B=-1.367 rad`；
+- 完整协同序列通过，WHEEL 全程 Disabled。
+
+可复用命令和限位见
+[`firmware/dm-mc02-can1-three-motor/README.md`](../../../firmware/dm-mc02-can1-three-motor/README.md)，
+标定与验收边界见
+[`2026-08-10-single-leg-phase7-phase8.md`](../../../firmware/dm-mc02-can1-three-motor/evidence/2026-08-10-single-leg-phase7-phase8.md)。

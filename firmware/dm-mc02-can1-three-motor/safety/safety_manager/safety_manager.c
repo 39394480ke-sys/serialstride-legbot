@@ -87,6 +87,7 @@ MotionSafetySnapshot safety_manager_wheel_snapshot(
         .control_mode = motor->control_mode,
         .motor_state = motor->state,
         .velocity_millirad_s = motor->velocity_millirad_s,
+        .torque_millinewton_m = motor->torque_millinewton_m,
         .mos_temperature_c = motor->mos_temperature_c,
         .rotor_temperature_c = motor->rotor_temperature_c,
         .feedback_valid = motor->feedback_valid,

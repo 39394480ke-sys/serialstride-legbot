@@ -78,24 +78,24 @@ static void test_null_arguments_are_ignored(void)
 
 static void test_full_queue_drops_newest_bytes_deterministically(void)
 {
-    uint8_t input[35];
+    uint8_t input[67];
     uint8_t command = 0u;
 
     usb_command_queue_init();
-    for (uint8_t index = 0u; index < 35u; ++index) {
+    for (uint8_t index = 0u; index < 67u; ++index) {
         input[index] = index;
     }
     usb_command_queue_push_from_isr(input, sizeof(input));
 
     assert(usb_command_queue_dropped() == 3u);
-    for (uint8_t expected = 0u; expected < 32u; ++expected) {
+    for (uint8_t expected = 0u; expected < 64u; ++expected) {
         assert(usb_command_queue_pop(&command) && command == expected);
     }
     assert(!usb_command_queue_pop(&command));
 
-    usb_command_queue_push_from_isr(&input[32], 3u);
+    usb_command_queue_push_from_isr(&input[64], 3u);
     assert(usb_command_queue_dropped() == 3u);
-    for (uint8_t expected = 32u; expected < 35u; ++expected) {
+    for (uint8_t expected = 64u; expected < 67u; ++expected) {
         assert(usb_command_queue_pop(&command) && command == expected);
     }
 }
@@ -117,20 +117,41 @@ static void test_emergency_stop_bypasses_full_queue_and_flushes_commands(void)
     assert(!usb_command_queue_pop(&command));
 }
 
-static void test_emergency_stop_flushes_same_packet_motion_commands(void)
+static void test_lowercase_x_inside_extend_command_is_not_emergency(void)
+{
+    static const uint8_t input[] = "capture-extend\n";
+    uint8_t command = 0u;
+    size_t index;
+
+    usb_command_queue_init();
+    usb_command_queue_push_from_isr(input, sizeof(input) - 1u);
+
+    assert(!usb_command_queue_take_emergency_stop());
+    for (index = 0u; index < sizeof(input) - 1u; ++index)
+        assert(usb_command_queue_pop(&command) && command == input[index]);
+}
+
+static void test_standalone_lowercase_x_remains_emergency_stop(void)
 {
     static const uint8_t input[] = {'A', 'G', 'x', 'G'};
-    static const uint8_t after[] = {'S'};
-    uint8_t command = 0u;
 
     usb_command_queue_init();
     usb_command_queue_push_from_isr(input, sizeof(input));
+    assert(usb_command_queue_take_emergency_stop());
+}
 
+static void test_stop_all_word_has_priority_across_usb_packets(void)
+{
+    static const uint8_t first[] = {'A', 'G', 's', 't', 'o'};
+    static const uint8_t second[] = {'p', '-', 'a', 'l', 'l', '\n', 'G'};
+    uint8_t command = 0u;
+
+    usb_command_queue_init();
+    usb_command_queue_push_from_isr(first, sizeof(first));
+    assert(!usb_command_queue_take_emergency_stop());
+    usb_command_queue_push_from_isr(second, sizeof(second));
     assert(usb_command_queue_take_emergency_stop());
     assert(!usb_command_queue_pop(&command));
-
-    usb_command_queue_push_from_isr(after, sizeof(after));
-    assert(usb_command_queue_pop(&command) && command == 'S');
 }
 
 int main(void)
@@ -141,6 +162,8 @@ int main(void)
     test_null_arguments_are_ignored();
     test_full_queue_drops_newest_bytes_deterministically();
     test_emergency_stop_bypasses_full_queue_and_flushes_commands();
-    test_emergency_stop_flushes_same_packet_motion_commands();
+    test_lowercase_x_inside_extend_command_is_not_emergency();
+    test_standalone_lowercase_x_remains_emergency_stop();
+    test_stop_all_word_has_priority_across_usb_packets();
     return 0;
 }

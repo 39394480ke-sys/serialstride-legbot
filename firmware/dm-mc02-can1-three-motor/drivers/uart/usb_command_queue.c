@@ -2,20 +2,25 @@
 
 #include <stddef.h>
 
-#define USB_COMMAND_QUEUE_CAPACITY 32u
+#define USB_COMMAND_QUEUE_CAPACITY 64u
 #define USB_COMMAND_QUEUE_MASK (USB_COMMAND_QUEUE_CAPACITY - 1u)
 
 static uint8_t queue[USB_COMMAND_QUEUE_CAPACITY];
 static volatile uint8_t read_index;
 static volatile uint8_t write_index;
 static volatile uint8_t emergency_stop_pending;
+static volatile uint8_t stop_all_match_index;
+static volatile uint8_t line_length;
 static volatile uint32_t dropped_count;
+static const uint8_t stop_all_command[] = "stop-all";
 
 void usb_command_queue_init(void)
 {
     __atomic_store_n(&read_index, 0u, __ATOMIC_RELAXED);
     __atomic_store_n(&write_index, 0u, __ATOMIC_RELAXED);
     __atomic_store_n(&emergency_stop_pending, 0u, __ATOMIC_RELAXED);
+    stop_all_match_index = 0u;
+    line_length = 0u;
     dropped_count = 0u;
 }
 
@@ -28,10 +33,34 @@ void usb_command_queue_push_from_isr(const uint8_t *data, uint32_t length)
     }
 
     for (index = 0u; index < length; ++index) {
-        if (data[index] == (uint8_t)'X' || data[index] == (uint8_t)'x') {
+        uint8_t match = stop_all_match_index;
+
+        if (data[index] == (uint8_t)'X' ||
+            (data[index] == (uint8_t)'x' && line_length == 0u)) {
             __atomic_store_n(&emergency_stop_pending, 1u, __ATOMIC_RELEASE);
             continue;
         }
+        if (data[index] == stop_all_command[match]) {
+            ++match;
+            if (match == sizeof(stop_all_command) - 1u) {
+                __atomic_store_n(&emergency_stop_pending, 1u,
+                                 __ATOMIC_RELEASE);
+                match = 0u;
+            }
+        } else {
+            match = data[index] == stop_all_command[0] ? 1u : 0u;
+        }
+        stop_all_match_index = match;
+        if (data[index] == (uint8_t)'\r' || data[index] == (uint8_t)'\n')
+            line_length = 0u;
+        else if ((data[index] >= (uint8_t)'a' &&
+                  data[index] <= (uint8_t)'z') ||
+                 data[index] == (uint8_t)'-')
+            line_length = line_length < UINT8_MAX
+                              ? (uint8_t)(line_length + 1u)
+                              : UINT8_MAX;
+        else
+            line_length = 0u;
 
         uint8_t write = __atomic_load_n(&write_index, __ATOMIC_RELAXED);
         uint8_t read = __atomic_load_n(&read_index, __ATOMIC_ACQUIRE);

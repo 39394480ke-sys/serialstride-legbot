@@ -78,6 +78,25 @@ static void test_disable_confirmation_timeout_fails_closed(void)
     assert(result.send_mit && result.send_disable && result.cut_power);
 }
 
+static void test_configurable_bringup_pulse_is_bounded(void)
+{
+    Dm4310Controller controller;
+    Dm4310SafetySnapshot safety = safe_snapshot(0u);
+    Dm4310MotionDecision result;
+
+    dm4310_controller_init(&controller);
+    assert(dm4310_controller_set_pulse_profile(&controller, 50, 300u));
+    (void)dm4310_controller_command(&controller, 'A', &safety);
+    result = dm4310_controller_command(&controller, 'B', &safety);
+    assert(result.target_velocity_millirad_s == -50);
+    safety.motor_state = 1u;
+    (void)dm4310_controller_step(&controller, &safety);
+    safety.now_ms = 300u;
+    result = dm4310_controller_step(&controller, &safety);
+    assert(result.event == DM4310_EVENT_ZERO_HOLD && result.send_mit);
+    assert(!dm4310_controller_set_pulse_profile(&controller, 50, 300u));
+}
+
 static void test_zero_speed_test_remains_500_ms(void)
 {
     Dm4310Controller controller;
@@ -167,6 +186,7 @@ int main(void)
 {
     test_arm_and_short_pulse_sequence();
     test_disable_confirmation_timeout_fails_closed();
+    test_configurable_bringup_pulse_is_bounded();
     test_zero_speed_test_remains_500_ms();
     test_enable_deadline_fails_closed();
     test_start_guards();

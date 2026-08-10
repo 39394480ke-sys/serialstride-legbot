@@ -119,3 +119,34 @@ cc -std=c11 -Wall -Wextra -Werror \
   -o "$motor_manager_out"
 
 "$motor_manager_out"
+
+single_leg_out="${TMPDIR:-/tmp}/dm-mc02-single-leg-bringup-tests"
+
+cc -std=c11 -Wall -Wextra -Werror \
+  -I"$root/app/single_leg_bringup" -I"$root/motors/motor_manager" \
+  "$root/tests/test_single_leg_bringup.c" \
+  "$root/app/single_leg_bringup/single_leg_bringup.c" \
+  -o "$single_leg_out"
+
+"$single_leg_out"
+
+single_leg_trajectory_out="${TMPDIR:-/tmp}/dm-mc02-single-leg-trajectory-tests"
+
+cc -std=c11 -Wall -Wextra -Werror \
+  -I"$root/app/single_leg_bringup" -I"$root/motors/motor_manager" \
+  "$root/tests/test_single_leg_trajectory.c" \
+  "$root/app/single_leg_bringup/single_leg_trajectory.c" \
+  -o "$single_leg_trajectory_out"
+
+"$single_leg_trajectory_out"
+
+serial_logger_out="${TMPDIR:-/tmp}/dm-mc02-serial-logger-tests"
+
+cc -std=c11 -Wall -Wextra -Werror \
+  -I"$root/tests/stubs" -I"$root/drivers/uart" -I"$root/motors/h6215" \
+  "$root/tests/test_serial_logger.c" \
+  "$root/drivers/uart/serial_logger.c" \
+  "$root/drivers/uart/motion_io.c" \
+  -o "$serial_logger_out"
+
+"$serial_logger_out"

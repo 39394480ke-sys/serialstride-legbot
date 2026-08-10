@@ -54,6 +54,7 @@ typedef struct {
     uint8_t control_mode;
     uint8_t motor_state;
     int32_t velocity_millirad_s;
+    int32_t torque_millinewton_m;
     uint8_t mos_temperature_c;
     uint8_t rotor_temperature_c;
     bool feedback_valid;
@@ -74,6 +75,9 @@ typedef struct {
     bool armed;
     bool continuous_requested;
     bool watchdog_stop;
+    int8_t configured_pulse_step;
+    uint32_t configured_pulse_duration_ms;
+    uint32_t pulse_duration_ms;
     int8_t pulse_step;
     int8_t current_step;
     int8_t target_step;
@@ -85,6 +89,9 @@ typedef struct {
 } MotionController;
 
 void motion_controller_init(MotionController *controller);
+bool motion_controller_set_pulse_profile(MotionController *controller,
+                                         int8_t velocity_step,
+                                         uint32_t duration_ms);
 MotionDecision motion_controller_command(MotionController *controller,
                                           uint8_t command,
                                           const MotionSafetySnapshot *safety);
