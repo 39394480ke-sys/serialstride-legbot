@@ -22,6 +22,7 @@ safety/
   safety_manager/          single and parallel safety snapshots and global trips
 app/
   three_motor_bringup/     command orchestration and telemetry
+  single_leg_bringup/      calibration, guarded jogs, and pair trajectories
 legacy/                    uncompiled historical bring-up entry points
 ```
 
@@ -94,6 +95,93 @@ Feedback freshness, enabled state, `0.800rad/s` overspeed, 60 C temperature,
 CAN passive/bus-off, and transmit-failure checks remain active throughout.
 `X` uses a priority path independent of a full ordinary USB command queue.
 Parameter polling pauses while motion or fault shutdown is active.
+
+## Single-leg bring-up commands
+
+`APP_MODE_SINGLE_LEG_BRINGUP` adds lowercase line commands without replacing
+the existing uppercase single-character interface. Send each command with CR,
+LF, or CRLF. Uppercase `X`, standalone lowercase `x`, and the complete
+`stop-all` word use the priority emergency path and flush queued commands.
+
+Power and read-only setup:
+
+```text
+power-arm
+power-on
+probe
+status
+disable-all
+stop-all
+```
+
+Selection, raw capture, and guarded jog:
+
+```text
+read-raw
+capture-stand
+capture-crouch
+capture-extend
+select-a
+select-b
+select-wheel
+arm
+jog-positive
+jog-negative
+phase10-arm
+move-stand
+move-mid-crouch
+move-mid-extend
+```
+
+Phase 10 joint-pair commands require a fresh `phase10-arm` before every move.
+They keep `WHEEL` disabled and interpolate both DM4310 raw-position targets
+with the same four-second cubic progress `3r^2 - 2r^3`:
+
+```text
+STAND       A=+1.008 rad  B=-1.307 rad
+MID_CROUCH  A=+0.835 rad  B=-1.129 rad
+MID_EXTEND  A=+1.181 rad  B=-1.484 rad
+```
+
+The midpoint targets are explicitly recorded in `single_leg_calibration.h`,
+remain inside the Phase 8 software limits, and do not imply validated
+load-bearing poses. Here `CROUCH` and `EXTEND` mean observed mechanical-contact
+endpoints, `STAND` means their temporary arithmetic midpoint, and
+`MID_CROUCH`/`MID_EXTEND` are conservative suspended-motion targets. Any stale
+feedback, CAN fault, wheel enable, joint state fault, software-limit crossing,
+excessive speed, torque, or temperature causes Disable All and power-off.
+`move-mid-crouch` and `move-mid-extend` additionally require both joints to
+start within `0.100 rad` of STAND; arbitrary hand-positioned starts are
+rejected.
+
+`read-raw` records the MCU timestamp, role, CAN ID, online/state, raw position,
+calibrated `q`, mechanical direction, velocity, torque, temperatures, feedback
+timestamp, and feedback age. Pose captures require both joints to be online,
+stationary, and Disabled; captures are stored in RAM only.
+
+Each `arm` is one-shot and expires after 3 seconds. The first arm after a
+selection or power/probe reset anchors a temporary `+/-0.100 rad`
+commissioning envelope. Re-arming does not move that envelope. A jog uses
+the role-specific commissioning profile in `single_leg_bringup.h`, then
+commands zero and Disable. Feedback torque above `0.500 Nm`, stale feedback,
+CAN faults, abnormal state, 60 C temperature, overspeed, or a position-limit
+violation causes a fail-closed stop.
+
+The 2026-08-10 mechanical-contact captures define calibrated global raw limits
+with 10% of total travel reserved at each end: JOINT_A is `0.731..1.285 rad`
+and JOINT_B is `-1.591..-1.022 rad`. Every joint arm and jog is constrained by
+both its global range and the temporary commissioning envelope. Pulse duration
+is target-limited, speed is reduced inside the final `0.050 rad`, and motion
+toward a boundary is rejected inside the final `0.010 rad`. A manually
+back-driven joint outside the range may move only toward the safe range.
+Calibration data and the accepted test boundaries are in
+`evidence/2026-08-10-single-leg-phase7-phase8.md`.
+
+The 2026-08-10 suspended sequence completed in both directions with WHEEL
+Disabled. This does not validate load bearing, stability, endurance, or
+forward kinematics. Low-gain final tracking residuals of about `0.04..0.07 rad`
+remain, and one isolated JOINT_B velocity sample of `+0.212 rad/s` was observed
+during Disable before the next frame returned to normal.
 
 ## Build and test
 
