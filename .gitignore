@@ -12,6 +12,8 @@ cmake-build-*/
 # Editors and temporary files
 .vscode/
 .worktrees/
+__pycache__/
+*.py[cod]
 *.tmp
 *.bak
 *.autosave

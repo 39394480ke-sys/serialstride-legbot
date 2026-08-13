@@ -1,0 +1,25 @@
+schema_version: 1
+units: m
+model: degenerate_five_bar
+assembly_branch: lower_z
+
+# User-confirmed equivalent geometry from the project's CAD draft.
+# The two active axes are coincident, so l5 is exactly zero.
+links:
+  l1: 0.110
+  l2: 0.132
+  l3: 0.132
+  l4: 0.110
+  l5: 0.0
+
+link_mapping:
+  l1: joint_a_proximal
+  l2: joint_a_distal
+  l3: joint_b_distal
+  l4: joint_b_proximal
+  l5: active_axis_separation
+
+evidence:
+  status: user_confirmed
+  source: project CAD draft
+  note: Both equivalent branches are 110 mm + 132 mm.

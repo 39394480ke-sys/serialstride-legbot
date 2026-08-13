@@ -1,0 +1,18 @@
+{
+  "samples_per_joint": 181,
+  "candidate_count": 32761,
+  "valid_count": 32761,
+  "wheel_x_range_m": [
+    -0.037327731679587625,
+    0.037073600782631076
+  ],
+  "wheel_z_range_m": [
+    -0.1761580252794872,
+    -0.09307277338040935
+  ],
+  "leg_length_range_m": [
+    0.0930735179676701,
+    0.17615910425271747
+  ],
+  "evidence": "model-derived; no independent CAD/raw-pose accuracy validation"
+}
