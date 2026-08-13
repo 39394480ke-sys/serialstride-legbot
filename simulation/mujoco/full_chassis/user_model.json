@@ -1,0 +1,2324 @@
+{
+  "robot_name": "generated_robot",
+  "coordinate_schema_version": 3,
+  "coordinate_frame": "z_up_x_forward",
+  "links": [
+    {
+      "link_id": "link_001",
+      "name": "base_link",
+      "part_ids": [
+        "part_040",
+        "part_039",
+        "part_001",
+        "part_002",
+        "part_041"
+      ],
+      "mass": 2.1999999999999806,
+      "inertia": {
+        "ixx": 0.00910173222355855,
+        "iyy": 0.012533152782192913,
+        "izz": 0.008188029220026025,
+        "ixy": 0.000009285906158697937,
+        "ixz": -0.000001984413042838177,
+        "iyz": 0.000016328528665580703
+      },
+      "mass_properties": {
+        "source": "geometry",
+        "mass": 2.1999999999999806,
+        "com_xyz_cad": [
+          -3.926892688478318,
+          -32.17257267323541,
+          -68.76558908096104
+        ],
+        "inertia_com_cad": {
+          "ixx": 0.00910173222355855,
+          "iyy": 0.012533152782192913,
+          "izz": 0.008188029220026025,
+          "ixy": 0.000009285906158697937,
+          "ixz": -0.000001984413042838177,
+          "iyz": 0.000016328528665580703
+        },
+        "quality": "exact_mesh",
+        "units": "kg_m2",
+        "volume_m3": 0.00016961581852701016
+      },
+      "visual_meshes": [],
+      "collision_meshes": [],
+      "sites": []
+    },
+    {
+      "link_id": "link_002",
+      "name": "link_002",
+      "part_ids": [
+        "part_027",
+        "part_026",
+        "part_025"
+      ],
+      "mass": 0.06800000000000005,
+      "inertia": {
+        "ixx": 0.00003845496621561159,
+        "iyy": 0.0000785605519773678,
+        "izz": 0.00011582364846998885,
+        "ixy": -0.00004296390168518157,
+        "ixz": 6.98280886829526e-7,
+        "iyz": 2.797112241270281e-7
+      },
+      "mass_properties": {
+        "source": "geometry",
+        "mass": 0.06800000000000005,
+        "com_xyz_cad": [
+          43.355872619988666,
+          -35.889528153790295,
+          -173.64862111465428
+        ],
+        "inertia_com_cad": {
+          "ixx": 0.00003845496621561159,
+          "iyy": 0.0000785605519773678,
+          "izz": 0.00011582364846998885,
+          "ixy": -0.00004296390168518157,
+          "ixz": 6.98280886829526e-7,
+          "iyz": 2.797112241270281e-7
+        },
+        "quality": "exact_mesh",
+        "units": "kg_m2",
+        "volume_m3": 0.000027621498999369713
+      },
+      "visual_meshes": [],
+      "collision_meshes": [],
+      "sites": []
+    },
+    {
+      "link_id": "link_003",
+      "name": "link_003",
+      "part_ids": [
+        "part_038"
+      ],
+      "mass": 0.014000000000000271,
+      "inertia": {
+        "ixx": 0.0000023089586617911666,
+        "iyy": 0.000003955870336201019,
+        "izz": 0.000006208458123801974,
+        "ixy": 0.000002167446544029775,
+        "ixz": -1.730667401415377e-8,
+        "iyz": 1.2394794743218296e-8
+      },
+      "mass_properties": {
+        "source": "geometry",
+        "mass": 0.014000000000000271,
+        "com_xyz_cad": [
+          -13.750143637480491,
+          -55.174902036753146,
+          -181.10261157833068
+        ],
+        "inertia_com_cad": {
+          "ixx": 0.0000023089586617911666,
+          "iyy": 0.000003955870336201019,
+          "izz": 0.000006208458123801974,
+          "ixy": 0.000002167446544029775,
+          "ixz": -1.730667401415377e-8,
+          "iyz": 1.2394794743218296e-8
+        },
+        "quality": "exact_mesh",
+        "units": "kg_m2",
+        "volume_m3": 0.000005097559533017368
+      },
+      "visual_meshes": [],
+      "collision_meshes": [],
+      "sites": []
+    },
+    {
+      "link_id": "link_004",
+      "name": "link_004",
+      "part_ids": [
+        "part_036"
+      ],
+      "mass": 0.006000000000000172,
+      "inertia": {
+        "ixx": 0.0000014789904418076185,
+        "iyy": 0.0000014121399919247424,
+        "izz": 0.000002882130433727332,
+        "ixy": -0.0000013604886392665358,
+        "ixz": 0,
+        "iyz": 0
+      },
+      "mass_properties": {
+        "source": "geometry",
+        "mass": 0.006000000000000172,
+        "com_xyz_cad": [
+          -22.056422240234127,
+          -13.949961123000405,
+          -186.80000305175443
+        ],
+        "inertia_com_cad": {
+          "ixx": 0.0000014789904418076185,
+          "iyy": 0.0000014121399919247424,
+          "izz": 0.000002882130433727332,
+          "ixy": -0.0000013604886392665358,
+          "ixz": 0,
+          "iyz": 0
+        },
+        "quality": "exact_mesh",
+        "units": "kg_m2",
+        "volume_m3": 0.0000023564888961579714
+      },
+      "visual_meshes": [],
+      "collision_meshes": [],
+      "sites": [
+        {
+          "site_id": "closure_001_a_site",
+          "name": "closure_001_a_site",
+          "local_xyz": [
+            41.90238298,
+            -42.94403684,
+            -3.0000000000000053
+          ],
+          "local_quat_wxyz": [
+            6.123233995736766e-17,
+            -1,
+            0,
+            0
+          ],
+          "purpose": "loop_anchor",
+          "source_constraint_id": "closure_001",
+          "source_side": "a"
+        }
+      ]
+    },
+    {
+      "link_id": "link_005",
+      "name": "link_005",
+      "part_ids": [
+        "part_032",
+        "part_030"
+      ],
+      "mass": 0.01999999999999874,
+      "inertia": {
+        "ixx": 0.000009101833363656647,
+        "iyy": 0.000005717028795971303,
+        "izz": 0.000014541618894896357,
+        "ixy": 0.000006073007713255644,
+        "ixz": -6.008371577131587e-8,
+        "iyz": 3.8838119949463955e-8
+      },
+      "mass_properties": {
+        "source": "geometry",
+        "mass": 0.01999999999999874,
+        "com_xyz_cad": [
+          33.20359149129027,
+          -30.877526010521567,
+          -180.45464634482292
+        ],
+        "inertia_com_cad": {
+          "ixx": 0.000009101833363656647,
+          "iyy": 0.000005717028795971303,
+          "izz": 0.000014541618894896357,
+          "ixy": 0.000006073007713255644,
+          "ixz": -6.008371577131587e-8,
+          "iyz": 3.8838119949463955e-8
+        },
+        "quality": "exact_mesh",
+        "units": "kg_m2",
+        "volume_m3": 0.000008368986151982865
+      },
+      "visual_meshes": [],
+      "collision_meshes": [],
+      "sites": []
+    },
+    {
+      "link_id": "link_006",
+      "name": "link_006",
+      "part_ids": [
+        "part_037"
+      ],
+      "mass": 0.000773664342925163,
+      "inertia": {
+        "ixx": 2.7147089527317542e-8,
+        "iyy": 2.714708955196912e-8,
+        "izz": 6.275159435202188e-9,
+        "ixy": -3.343004527939521e-17,
+        "ixz": -4.298622477502535e-17,
+        "iyz": 9.631300558724e-17
+      },
+      "mass_properties": {
+        "source": "geometry",
+        "mass": 0.000773664342925163,
+        "com_xyz_cad": [
+          4.365713093032723e-8,
+          6.443611553488972,
+          -179.17588411886211
+        ],
+        "inertia_com_cad": {
+          "ixx": 2.7147089527317542e-8,
+          "iyy": 2.714708955196912e-8,
+          "izz": 6.275159435202188e-9,
+          "ixy": -3.343004527939521e-17,
+          "ixz": -4.298622477502535e-17,
+          "iyz": 9.631300558724e-17
+        },
+        "quality": "exact_mesh",
+        "units": "kg_m2",
+        "volume_m3": 6.447202857709691e-7
+      },
+      "visual_meshes": [],
+      "collision_meshes": [],
+      "sites": [
+        {
+          "site_id": "closure_001_b_site",
+          "name": "closure_001_b_site",
+          "local_xyz": [
+            0,
+            0,
+            3.1000000000000227
+          ],
+          "local_quat_wxyz": [
+            6.123233995736766e-17,
+            -1,
+            0,
+            0
+          ],
+          "purpose": "loop_anchor",
+          "source_constraint_id": "closure_001",
+          "source_side": "b"
+        }
+      ]
+    },
+    {
+      "link_id": "link_007",
+      "name": "link_007",
+      "part_ids": [
+        "part_035"
+      ],
+      "mass": 0.006000000000000835,
+      "inertia": {
+        "ixx": 8.948666766153687e-7,
+        "iyy": 0.0000019962634528325477,
+        "izz": 0.0000028821301294440344,
+        "ixy": -0.0000012444988643118998,
+        "ixz": 0,
+        "iyz": 0
+      },
+      "mass_properties": {
+        "source": "geometry",
+        "mass": 0.006000000000000835,
+        "com_xyz_cad": [
+          79.78285716766915,
+          -55.40416167580218,
+          -186.39999389647883
+        ],
+        "inertia_com_cad": {
+          "ixx": 8.948666766153687e-7,
+          "iyy": 0.0000019962634528325477,
+          "izz": 0.0000028821301294440344,
+          "ixy": -0.0000012444988643118998,
+          "ixz": 0,
+          "iyz": 0
+        },
+        "quality": "exact_mesh",
+        "units": "kg_m2",
+        "volume_m3": 0.0000023564891286338193
+      },
+      "visual_meshes": [],
+      "collision_meshes": [],
+      "sites": []
+    },
+    {
+      "link_id": "link_008",
+      "name": "link_008",
+      "part_ids": [
+        "part_033"
+      ],
+      "mass": 0.0007736643525105228,
+      "inertia": {
+        "ixx": 2.7147089858654676e-8,
+        "iyy": 2.7147091687906936e-8,
+        "izz": 6.275159152211884e-9,
+        "ixy": 6.34282213236103e-16,
+        "ixz": 2.801921258692231e-15,
+        "iyz": -3.208234762481064e-16
+      },
+      "mass_properties": {
+        "source": "geometry",
+        "mass": 0.0007736643525105228,
+        "com_xyz_cad": [
+          104.08175547651284,
+          -37.742139879877875,
+          -179.17588480080718
+        ],
+        "inertia_com_cad": {
+          "ixx": 2.7147089858654676e-8,
+          "iyy": 2.7147091687906936e-8,
+          "izz": 6.275159152211884e-9,
+          "ixy": 6.34282213236103e-16,
+          "ixz": 2.801921258692231e-15,
+          "iyz": -3.208234762481064e-16
+        },
+        "quality": "exact_mesh",
+        "units": "kg_m2",
+        "volume_m3": 6.44720293758769e-7
+      },
+      "visual_meshes": [],
+      "collision_meshes": [],
+      "sites": [
+        {
+          "site_id": "closure_002_b_site",
+          "name": "closure_002_b_site",
+          "local_xyz": [
+            0,
+            0,
+            -9.75
+          ],
+          "local_quat_wxyz": [
+            6.123233995736766e-17,
+            -1,
+            0,
+            0
+          ],
+          "purpose": "loop_anchor",
+          "source_constraint_id": "closure_002",
+          "source_side": "b"
+        }
+      ]
+    },
+    {
+      "link_id": "link_009",
+      "name": "link_009",
+      "part_ids": [
+        "part_034",
+        "part_024"
+      ],
+      "mass": 0.05599999999999846,
+      "inertia": {
+        "ixx": 0.00009424873582362943,
+        "iyy": 0.00008174934166495754,
+        "izz": 0.00017553871749493538,
+        "ixy": 0.00008179855779677293,
+        "ixz": -3.181739855602407e-8,
+        "iyz": 2.547556848134166e-8
+      },
+      "mass_properties": {
+        "source": "geometry",
+        "mass": 0.05599999999999846,
+        "com_xyz_cad": [
+          47.30388717314008,
+          40.974144480505686,
+          -180.78555281391988
+        ],
+        "inertia_com_cad": {
+          "ixx": 0.00009424873582362943,
+          "iyy": 0.00008174934166495754,
+          "izz": 0.00017553871749493538,
+          "ixy": 0.00008179855779677293,
+          "ixz": -3.181739855602407e-8,
+          "iyz": 2.547556848134166e-8
+        },
+        "quality": "exact_mesh",
+        "units": "kg_m2",
+        "volume_m3": 0.00002153572196452899
+      },
+      "visual_meshes": [],
+      "collision_meshes": [],
+      "sites": [
+        {
+          "site_id": "closure_002_a_site",
+          "name": "closure_002_a_site",
+          "local_xyz": [
+            11.896513069999997,
+            33.97753635,
+            -5.350000000000018
+          ],
+          "local_quat_wxyz": [
+            6.123233995736766e-17,
+            -1,
+            0,
+            0
+          ],
+          "purpose": "loop_anchor",
+          "source_constraint_id": "closure_002",
+          "source_side": "a"
+        },
+        {
+          "site_id": "closure_003_a_site",
+          "name": "closure_003_a_site",
+          "local_xyz": [
+            -9.656334795000006,
+            -22.701383405,
+            3.0000030499999726
+          ],
+          "local_quat_wxyz": [
+            6.123233995736766e-17,
+            -1,
+            0,
+            0
+          ],
+          "purpose": "loop_anchor",
+          "source_constraint_id": "closure_003",
+          "source_side": "a"
+        },
+        {
+          "site_id": "closure_003_a_site_2",
+          "name": "closure_003_a_site_2",
+          "local_xyz": [
+            -9.656334795000006,
+            -22.701383405,
+            3.0000030499999726
+          ],
+          "local_quat_wxyz": [
+            6.123233995736766e-17,
+            -1,
+            0,
+            0
+          ],
+          "purpose": "loop_anchor",
+          "source_constraint_id": "joint_004",
+          "source_side": "a"
+        }
+      ]
+    },
+    {
+      "link_id": "link_010",
+      "name": "link_010",
+      "part_ids": [
+        "part_028",
+        "part_021",
+        "part_022"
+      ],
+      "mass": 0.6000000000000005,
+      "inertia": {
+        "ixx": 0.00031778997266959126,
+        "iyy": 0.0003177894083264232,
+        "izz": 0.00048461086246112575,
+        "ixy": 1.2040277019554701e-8,
+        "ixz": -7.273880893057162e-13,
+        "iyz": -2.680495408968755e-12
+      },
+      "mass_properties": {
+        "source": "geometry",
+        "mass": 0.6000000000000005,
+        "com_xyz_cad": [
+          -5.633193197674568e-7,
+          90.7122771032913,
+          -207.22814040921017
+        ],
+        "inertia_com_cad": {
+          "ixx": 0.00031778997266959126,
+          "iyy": 0.0003177894083264232,
+          "izz": 0.00048461086246112575,
+          "ixy": 1.2040277019554701e-8,
+          "ixz": -7.273880893057162e-13,
+          "iyz": -2.680495408968755e-12
+        },
+        "quality": "exact_mesh",
+        "units": "kg_m2",
+        "volume_m3": 0.00018080768095156448
+      },
+      "visual_meshes": [],
+      "collision_meshes": [],
+      "sites": []
+    },
+    {
+      "link_id": "link_011",
+      "name": "link_011",
+      "part_ids": [
+        "part_029"
+      ],
+      "mass": 0.001547285808648144,
+      "inertia": {
+        "ixx": 1.5562846715553428e-7,
+        "iyy": 1.0671218432812357e-7,
+        "izz": 2.574314808205509e-7,
+        "ixy": -1.138659418624911e-7,
+        "ixz": -7.193640296858939e-15,
+        "iyz": -8.897477662028833e-15
+      },
+      "mass_properties": {
+        "source": "geometry",
+        "mass": 0.001547285808648144,
+        "com_xyz_cad": [
+          35.44824457214237,
+          -39.33055367564926,
+          -196.65000068349204
+        ],
+        "inertia_com_cad": {
+          "ixx": 1.5562846715553428e-7,
+          "iyy": 1.0671218432812357e-7,
+          "izz": 2.574314808205509e-7,
+          "ixy": -1.138659418624911e-7,
+          "ixz": -7.193640296858939e-15,
+          "iyz": -8.897477662028833e-15
+        },
+        "quality": "exact_mesh",
+        "units": "kg_m2",
+        "volume_m3": 0.00000128940484054012
+      },
+      "visual_meshes": [],
+      "collision_meshes": [],
+      "sites": []
+    },
+    {
+      "link_id": "link_012",
+      "name": "link_012",
+      "part_ids": [
+        "part_031"
+      ],
+      "mass": 0.011455286143995717,
+      "inertia": {
+        "ixx": 0.0000020912952777622593,
+        "iyy": 0.0000014731897130126396,
+        "izz": 0.000003263664287561883,
+        "ixy": -0.000001438808828191921,
+        "ixz": 5.0854898090974956e-14,
+        "iyz": 5.726522282197117e-14
+      },
+      "mass_properties": {
+        "source": "geometry",
+        "mass": 0.011455286143995717,
+        "com_xyz_cad": [
+          61.02101339370684,
+          -7.6815273268344715,
+          -196.6499978207335
+        ],
+        "inertia_com_cad": {
+          "ixx": 0.0000020912952777622593,
+          "iyy": 0.0000014731897130126396,
+          "izz": 0.000003263664287561883,
+          "ixy": -0.000001438808828191921,
+          "ixz": 5.0854898090974956e-14,
+          "iyz": 5.726522282197117e-14
+        },
+        "quality": "exact_mesh",
+        "units": "kg_m2",
+        "volume_m3": 0.000009546071786663097
+      },
+      "visual_meshes": [],
+      "collision_meshes": [],
+      "sites": []
+    },
+    {
+      "link_id": "link_013",
+      "name": "link_013",
+      "part_ids": [
+        "part_023"
+      ],
+      "mass": 0.00022249230848318623,
+      "inertia": {
+        "ixx": 2.8663412754392873e-9,
+        "iyy": 2.8663409764834406e-9,
+        "izz": 2.0244771114635883e-9,
+        "ixy": -3.096944851006919e-17,
+        "ixz": 0,
+        "iyz": 0
+      },
+      "mass_properties": {
+        "source": "geometry",
+        "mass": 0.00022249230848318623,
+        "com_xyz_cad": [
+          82.52890855979682,
+          18.93677908546348,
+          -190.3000030517846
+        ],
+        "inertia_com_cad": {
+          "ixx": 2.8663412754392873e-9,
+          "iyy": 2.8663409764834406e-9,
+          "izz": 2.0244771114635883e-9,
+          "ixy": -3.096944851006919e-17,
+          "ixz": 0,
+          "iyz": 0
+        },
+        "quality": "exact_mesh",
+        "units": "kg_m2",
+        "volume_m3": 1.8541025706932186e-7
+      },
+      "visual_meshes": [],
+      "collision_meshes": [],
+      "sites": [
+        {
+          "site_id": "closure_003_b_site",
+          "name": "closure_003_b_site",
+          "local_xyz": [
+            0.0000027249999874356945,
+            4.850000019922071e-7,
+            -7.699996950000013
+          ],
+          "local_quat_wxyz": [
+            6.123233995736766e-17,
+            -1,
+            0,
+            0
+          ],
+          "purpose": "loop_anchor",
+          "source_constraint_id": "closure_003",
+          "source_side": "b"
+        },
+        {
+          "site_id": "closure_003_b_site_2",
+          "name": "closure_003_b_site_2",
+          "local_xyz": [
+            0.0000027249999874356945,
+            4.850000019922071e-7,
+            -7.699996950000013
+          ],
+          "local_quat_wxyz": [
+            6.123233995736766e-17,
+            -1,
+            0,
+            0
+          ],
+          "purpose": "loop_anchor",
+          "source_constraint_id": "joint_004",
+          "source_side": "b"
+        }
+      ]
+    },
+    {
+      "link_id": "link_014",
+      "name": "link_014",
+      "part_ids": [
+        "part_012",
+        "part_010",
+        "part_011"
+      ],
+      "mass": 0.06800000000000045,
+      "inertia": {
+        "ixx": 0.00003845496586786203,
+        "iyy": 0.00007856055134267236,
+        "izz": 0.00011582364762070808,
+        "ixy": -0.00004296390129770977,
+        "ixz": -6.982810682383235e-7,
+        "iyz": -2.7971135543137736e-7
+      },
+      "mass_properties": {
+        "source": "geometry",
+        "mass": 0.06800000000000045,
+        "com_xyz_cad": [
+          43.355873359460794,
+          -35.889527664054995,
+          35.648621025822536
+        ],
+        "inertia_com_cad": {
+          "ixx": 0.00003845496586786203,
+          "iyy": 0.00007856055134267236,
+          "izz": 0.00011582364762070808,
+          "ixy": -0.00004296390129770977,
+          "ixz": -6.982810682383235e-7,
+          "iyz": -2.7971135543137736e-7
+        },
+        "quality": "exact_mesh",
+        "units": "kg_m2",
+        "volume_m3": 0.000027621498390270672
+      },
+      "visual_meshes": [],
+      "collision_meshes": [],
+      "sites": []
+    },
+    {
+      "link_id": "link_015",
+      "name": "link_015",
+      "part_ids": [
+        "part_003"
+      ],
+      "mass": 0.013999999999999953,
+      "inertia": {
+        "ixx": 0.0000023089586619709044,
+        "iyy": 0.000003955870336171895,
+        "izz": 0.000006208458123939427,
+        "ixy": 0.000002167446544141958,
+        "ixz": 1.730667405874271e-8,
+        "iyz": -1.2394794812961705e-8
+      },
+      "mass_properties": {
+        "source": "geometry",
+        "mass": 0.013999999999999953,
+        "com_xyz_cad": [
+          -13.750143637516125,
+          -55.174902036324525,
+          43.10261539326221
+        ],
+        "inertia_com_cad": {
+          "ixx": 0.0000023089586619709044,
+          "iyy": 0.000003955870336171895,
+          "izz": 0.000006208458123939427,
+          "ixy": 0.000002167446544141958,
+          "ixz": 1.730667405874271e-8,
+          "iyz": -1.2394794812961705e-8
+        },
+        "quality": "exact_mesh",
+        "units": "kg_m2",
+        "volume_m3": 0.0000050975595330441005
+      },
+      "visual_meshes": [],
+      "collision_meshes": [],
+      "sites": []
+    },
+    {
+      "link_id": "link_016",
+      "name": "link_016",
+      "part_ids": [
+        "part_005"
+      ],
+      "mass": 0.00600000000000006,
+      "inertia": {
+        "ixx": 0.0000014789904418051346,
+        "iyy": 0.000001412139991922244,
+        "izz": 0.0000028821304337273,
+        "ixy": -0.0000013604886392664892,
+        "ixz": 0,
+        "iyz": 0
+      },
+      "mass_properties": {
+        "source": "geometry",
+        "mass": 0.00600000000000006,
+        "com_xyz_cad": [
+          -22.056422240234298,
+          -13.949961123000497,
+          48.79999923706032
+        ],
+        "inertia_com_cad": {
+          "ixx": 0.0000014789904418051346,
+          "iyy": 0.000001412139991922244,
+          "izz": 0.0000028821304337273,
+          "ixy": -0.0000013604886392664892,
+          "ixz": 0,
+          "iyz": 0
+        },
+        "quality": "exact_mesh",
+        "units": "kg_m2",
+        "volume_m3": 0.0000023564888961579384
+      },
+      "visual_meshes": [],
+      "collision_meshes": [],
+      "sites": []
+    },
+    {
+      "link_id": "link_017",
+      "name": "link_017",
+      "part_ids": [
+        "part_008",
+        "part_016"
+      ],
+      "mass": 0.019999999999999834,
+      "inertia": {
+        "ixx": 0.00000910183242698492,
+        "iyy": 0.000005717028355483908,
+        "izz": 0.000014541617483578877,
+        "ixy": 0.000006073007120263819,
+        "ixz": 6.008352451957381e-8,
+        "iyz": -3.883799635392255e-8
+      },
+      "mass_properties": {
+        "source": "geometry",
+        "mass": 0.019999999999999834,
+        "com_xyz_cad": [
+          33.203592506129986,
+          -30.877526668121433,
+          42.454643588918536
+        ],
+        "inertia_com_cad": {
+          "ixx": 0.00000910183242698492,
+          "iyy": 0.000005717028355483908,
+          "izz": 0.000014541617483578877,
+          "ixy": 0.000006073007120263819,
+          "ixz": 6.008352451957381e-8,
+          "iyz": -3.883799635392255e-8
+        },
+        "quality": "exact_mesh",
+        "units": "kg_m2",
+        "volume_m3": 0.000008368987127263455
+      },
+      "visual_meshes": [],
+      "collision_meshes": [],
+      "sites": [
+        {
+          "site_id": "closure_005_b_site",
+          "name": "closure_005_b_site",
+          "local_xyz": [
+            -41.90238298,
+            42.944036605,
+            -4.375000385
+          ],
+          "local_quat_wxyz": [
+            1,
+            0,
+            0,
+            0
+          ],
+          "purpose": "loop_anchor",
+          "source_constraint_id": "closure_005",
+          "source_side": "b"
+        }
+      ]
+    },
+    {
+      "link_id": "link_018",
+      "name": "link_018",
+      "part_ids": [
+        "part_004"
+      ],
+      "mass": 0.0007736653329849143,
+      "inertia": {
+        "ixx": 2.7147139747683678e-8,
+        "iyy": 2.7147139773277268e-8,
+        "izz": 6.27517083216981e-9,
+        "ixy": -3.393297413231682e-17,
+        "ixz": 4.2774817896980055e-17,
+        "iyz": -9.621700125503098e-17
+      },
+      "mass_properties": {
+        "source": "geometry",
+        "mass": 0.0007736653329849143,
+        "com_xyz_cad": [
+          4.38810804573519e-8,
+          6.443611553349765,
+          41.17587934835417
+        ],
+        "inertia_com_cad": {
+          "ixx": 2.7147139747683678e-8,
+          "iyy": 2.7147139773277268e-8,
+          "izz": 6.27517083216981e-9,
+          "ixy": -3.393297413231682e-17,
+          "ixz": 4.2774817896980055e-17,
+          "iyz": -9.621700125503098e-17
+        },
+        "quality": "exact_mesh",
+        "units": "kg_m2",
+        "volume_m3": 6.447211108207619e-7
+      },
+      "visual_meshes": [],
+      "collision_meshes": [],
+      "sites": [
+        {
+          "site_id": "closure_005_a_site",
+          "name": "closure_005_a_site",
+          "local_xyz": [
+            0,
+            -2.3499999990406195e-7,
+            -4.7750003849999985
+          ],
+          "local_quat_wxyz": [
+            1,
+            0,
+            0,
+            0
+          ],
+          "purpose": "loop_anchor",
+          "source_constraint_id": "closure_005",
+          "source_side": "a"
+        }
+      ]
+    },
+    {
+      "link_id": "link_019",
+      "name": "link_019",
+      "part_ids": [
+        "part_007"
+      ],
+      "mass": 0.006000000000000237,
+      "inertia": {
+        "ixx": 8.948666766137182e-7,
+        "iyy": 0.000001996263452829226,
+        "izz": 0.000002882130129442758,
+        "ixy": -0.00000124449886431214,
+        "ixz": 0,
+        "iyz": 0
+      },
+      "mass_properties": {
+        "source": "geometry",
+        "mass": 0.006000000000000237,
+        "com_xyz_cad": [
+          79.78285716767066,
+          -55.40416167580362,
+          48.400001525878324
+        ],
+        "inertia_com_cad": {
+          "ixx": 8.948666766137182e-7,
+          "iyy": 0.000001996263452829226,
+          "izz": 0.000002882130129442758,
+          "ixy": -0.00000124449886431214,
+          "ixz": 0,
+          "iyz": 0
+        },
+        "quality": "exact_mesh",
+        "units": "kg_m2",
+        "volume_m3": 0.0000023564891286336304
+      },
+      "visual_meshes": [],
+      "collision_meshes": [],
+      "sites": []
+    },
+    {
+      "link_id": "link_020",
+      "name": "link_020",
+      "part_ids": [
+        "part_009",
+        "part_017"
+      ],
+      "mass": 0.05599999999999976,
+      "inertia": {
+        "ixx": 0.00009424873582277073,
+        "iyy": 0.00008174934167653463,
+        "izz": 0.00017553871749318312,
+        "ixy": 0.00008179855779831996,
+        "ixz": 3.1817373788472215e-8,
+        "iyz": -2.5475543521030654e-8
+      },
+      "mass_properties": {
+        "source": "geometry",
+        "mass": 0.05599999999999976,
+        "com_xyz_cad": [
+          47.30388719695722,
+          40.974144458159294,
+          42.785549008965006
+        ],
+        "inertia_com_cad": {
+          "ixx": 0.00009424873582277073,
+          "iyy": 0.00008174934167653463,
+          "izz": 0.00017553871749318312,
+          "ixy": 0.00008179855779831996,
+          "ixz": 3.1817373788472215e-8,
+          "iyz": -2.5475543521030654e-8
+        },
+        "quality": "exact_mesh",
+        "units": "kg_m2",
+        "volume_m3": 0.00002153572197732791
+      },
+      "visual_meshes": [],
+      "collision_meshes": [],
+      "sites": [
+        {
+          "site_id": "closure_006_b_site",
+          "name": "closure_006_b_site",
+          "local_xyz": [
+            11.896513069999997,
+            -33.97753635,
+            -5.349999999999994
+          ],
+          "local_quat_wxyz": [
+            1,
+            0,
+            0,
+            0
+          ],
+          "purpose": "loop_anchor",
+          "source_constraint_id": "closure_006",
+          "source_side": "b"
+        },
+        {
+          "site_id": "closure_007_a_site",
+          "name": "closure_007_a_site",
+          "local_xyz": [
+            -9.656334795000006,
+            22.701383405,
+            2.999999240000001
+          ],
+          "local_quat_wxyz": [
+            1,
+            0,
+            0,
+            0
+          ],
+          "purpose": "loop_anchor",
+          "source_constraint_id": "closure_007",
+          "source_side": "a"
+        }
+      ]
+    },
+    {
+      "link_id": "link_021",
+      "name": "link_021",
+      "part_ids": [
+        "part_006"
+      ],
+      "mass": 0.0007736653414882953,
+      "inertia": {
+        "ixx": 2.7147140036502223e-8,
+        "iyy": 2.7147141872166334e-8,
+        "izz": 6.275170524060778e-9,
+        "ixy": 6.448815516553135e-16,
+        "ixz": -2.8188385980596894e-15,
+        "iyz": 3.068031831580803e-16
+      },
+      "mass_properties": {
+        "source": "geometry",
+        "mass": 0.0007736653414882953,
+        "com_xyz_cad": [
+          104.08175547016,
+          -37.742139883688935,
+          41.175880037052536
+        ],
+        "inertia_com_cad": {
+          "ixx": 2.7147140036502223e-8,
+          "iyy": 2.7147141872166334e-8,
+          "izz": 6.275170524060778e-9,
+          "ixy": 6.448815516553135e-16,
+          "ixz": -2.8188385980596894e-15,
+          "iyz": 3.068031831580803e-16
+        },
+        "quality": "exact_mesh",
+        "units": "kg_m2",
+        "volume_m3": 6.447211179069128e-7
+      },
+      "visual_meshes": [],
+      "collision_meshes": [],
+      "sites": [
+        {
+          "site_id": "closure_006_a_site",
+          "name": "closure_006_a_site",
+          "local_xyz": [
+            0,
+            0,
+            -0.25
+          ],
+          "local_quat_wxyz": [
+            1,
+            0,
+            0,
+            0
+          ],
+          "purpose": "loop_anchor",
+          "source_constraint_id": "closure_006",
+          "source_side": "a"
+        }
+      ]
+    },
+    {
+      "link_id": "link_022",
+      "name": "link_022",
+      "part_ids": [
+        "part_014"
+      ],
+      "mass": 0.0015472863751780392,
+      "inertia": {
+        "ixx": 1.5562850774805774e-7,
+        "iyy": 1.0671221532590746e-7,
+        "izz": 2.574315515149369e-7,
+        "ixy": -1.1386596379070367e-7,
+        "ixz": -2.2795012604600257e-15,
+        "iyz": -2.8208353848800603e-15
+      },
+      "mass_properties": {
+        "source": "geometry",
+        "mass": 0.0015472863751780392,
+        "com_xyz_cad": [
+          35.448237438726274,
+          -39.330562500382264,
+          58.649999940864014
+        ],
+        "inertia_com_cad": {
+          "ixx": 1.5562850774805774e-7,
+          "iyy": 1.0671221532590746e-7,
+          "izz": 2.574315515149369e-7,
+          "ixy": -1.1386596379070367e-7,
+          "ixz": -2.2795012604600257e-15,
+          "iyz": -2.8208353848800603e-15
+        },
+        "quality": "exact_mesh",
+        "units": "kg_m2",
+        "volume_m3": 0.000001289405312648366
+      },
+      "visual_meshes": [],
+      "collision_meshes": [],
+      "sites": []
+    },
+    {
+      "link_id": "link_023",
+      "name": "link_023",
+      "part_ids": [
+        "part_015"
+      ],
+      "mass": 0.011455284329123235,
+      "inertia": {
+        "ixx": 0.0000020912953303075157,
+        "iyy": 0.0000014731897019257953,
+        "izz": 0.000003263664538595992,
+        "ixy": -0.0000014388089780930326,
+        "ixz": -1.1230768276571988e-15,
+        "iyz": -7.349771284235052e-15
+      },
+      "mass_properties": {
+        "source": "geometry",
+        "mass": 0.011455284329123235,
+        "com_xyz_cad": [
+          61.02101514686409,
+          -7.68152523889322,
+          58.64999939113332
+        ],
+        "inertia_com_cad": {
+          "ixx": 0.0000020912953303075157,
+          "iyy": 0.0000014731897019257953,
+          "izz": 0.000003263664538595992,
+          "ixy": -0.0000014388089780930326,
+          "ixz": -1.1230768276571988e-15,
+          "iyz": -7.349771284235052e-15
+        },
+        "quality": "exact_mesh",
+        "units": "kg_m2",
+        "volume_m3": 0.000009546070274269363
+      },
+      "visual_meshes": [],
+      "collision_meshes": [],
+      "sites": []
+    },
+    {
+      "link_id": "link_024",
+      "name": "link_024",
+      "part_ids": [
+        "part_018"
+      ],
+      "mass": 0.00022249230848327893,
+      "inertia": {
+        "ixx": 2.866341275902286e-9,
+        "iyy": 2.866340977006456e-9,
+        "izz": 2.0244771115300453e-9,
+        "ixy": -3.098474227932557e-17,
+        "ixz": 0,
+        "iyz": 0
+      },
+      "mass_properties": {
+        "source": "geometry",
+        "mass": 0.00022249230848327893,
+        "com_xyz_cad": [
+          82.528908559788,
+          18.93677908546198,
+          52.29999923706166
+        ],
+        "inertia_com_cad": {
+          "ixx": 2.866341275902286e-9,
+          "iyy": 2.866340977006456e-9,
+          "izz": 2.0244771115300453e-9,
+          "ixy": -3.098474227932557e-17,
+          "ixz": 0,
+          "iyz": 0
+        },
+        "quality": "exact_mesh",
+        "units": "kg_m2",
+        "volume_m3": 1.854102570693991e-7
+      },
+      "visual_meshes": [],
+      "collision_meshes": [],
+      "sites": [
+        {
+          "site_id": "closure_007_b_site",
+          "name": "closure_007_b_site",
+          "local_xyz": [
+            0.0000027249999874356945,
+            -4.850000010492295e-7,
+            -7.700000760000002
+          ],
+          "local_quat_wxyz": [
+            1,
+            0,
+            0,
+            0
+          ],
+          "purpose": "loop_anchor",
+          "source_constraint_id": "closure_007",
+          "source_side": "b"
+        }
+      ]
+    },
+    {
+      "link_id": "link_025",
+      "name": "link_025",
+      "part_ids": [
+        "part_020",
+        "part_013",
+        "part_019"
+      ],
+      "mass": 0.599999999999999,
+      "inertia": {
+        "ixx": 0.0003177899887176242,
+        "iyy": 0.00031778942434964837,
+        "izz": 0.00048461086918861183,
+        "ixy": 1.2040285305335921e-8,
+        "ixz": 7.373395524700642e-13,
+        "iyz": 2.686339692359314e-12
+      },
+      "visual_meshes": [],
+      "collision_meshes": [],
+      "sites": [],
+      "mass_properties": {
+        "source": "geometry",
+        "mass": 0.599999999999999,
+        "com_xyz_cad": [
+          -5.644982040028473e-7,
+          90.71227710259869,
+          69.22813858425387
+        ],
+        "inertia_com_cad": {
+          "ixx": 0.0003177899887176242,
+          "iyy": 0.00031778942434964837,
+          "izz": 0.00048461086918861183,
+          "ixy": 1.2040285305335921e-8,
+          "ixz": 7.373395524700642e-13,
+          "iyz": 2.686339692359314e-12
+        },
+        "quality": "exact_mesh",
+        "units": "kg_m2",
+        "volume_m3": 0.00018080770203544882
+      }
+    }
+  ],
+  "joints": [
+    {
+      "joint_id": "link_002_joint",
+      "name": "link_002_joint",
+      "type": "continuous",
+      "parent": "base_link",
+      "child": "link_002",
+      "origin": {
+        "xyz": [
+          0,
+          -63.78027682,
+          -176
+        ],
+        "rpy": [
+          3.141592653589793,
+          0,
+          0
+        ]
+      },
+      "axis": [
+        0,
+        0,
+        -1
+      ],
+      "limit": {
+        "lower": -1.57,
+        "upper": 1.57,
+        "effort": 10,
+        "velocity": 5
+      },
+      "actuation": "position",
+      "frame_orientation_mode": "axis_aligned"
+    },
+    {
+      "joint_id": "link_003_joint",
+      "name": "link_003_joint",
+      "type": "revolute",
+      "parent": "base_link",
+      "child": "link_003",
+      "origin": {
+        "xyz": [
+          0,
+          -63.78027682,
+          -176
+        ],
+        "rpy": [
+          3.141592653589793,
+          0,
+          0
+        ]
+      },
+      "axis": [
+        0,
+        0,
+        -1
+      ],
+      "limit": {
+        "lower": -0.8727,
+        "upper": 0.384,
+        "effort": 10,
+        "velocity": 5
+      },
+      "actuation": "position",
+      "frame_orientation_mode": "axis_aligned"
+    },
+    {
+      "joint_id": "link_004_joint",
+      "name": "link_004_joint",
+      "type": "revolute",
+      "parent": "link_003",
+      "child": "link_004",
+      "origin": {
+        "xyz": [
+          -41.90238298,
+          -36.50042528,
+          -188.3
+        ],
+        "rpy": [
+          3.141592653589793,
+          0,
+          0
+        ]
+      },
+      "axis": [
+        0,
+        0,
+        -1
+      ],
+      "limit": {
+        "lower": -1.57,
+        "upper": 1.57,
+        "effort": 10,
+        "velocity": 5
+      },
+      "actuation": "passive",
+      "frame_orientation_mode": "axis_aligned"
+    },
+    {
+      "joint_id": "link_005_joint",
+      "name": "link_005_joint",
+      "type": "revolute",
+      "parent": "link_002",
+      "child": "link_005",
+      "origin": {
+        "xyz": [
+          41.90238298,
+          -36.50042528,
+          -186.4
+        ],
+        "rpy": [
+          3.141592653589793,
+          0,
+          0
+        ]
+      },
+      "axis": [
+        0,
+        0,
+        -1
+      ],
+      "limit": {
+        "lower": -1.57,
+        "upper": 1.57,
+        "effort": 10,
+        "velocity": 5
+      },
+      "actuation": "passive",
+      "frame_orientation_mode": "axis_aligned"
+    },
+    {
+      "joint_id": "link_006_joint",
+      "name": "link_006_joint",
+      "type": "revolute",
+      "parent": "link_005",
+      "child": "link_006",
+      "origin": {
+        "xyz": [
+          0,
+          6.44361156,
+          -182.2
+        ],
+        "rpy": [
+          3.141592653589793,
+          0,
+          0
+        ]
+      },
+      "axis": [
+        0,
+        0,
+        -1
+      ],
+      "limit": {
+        "lower": -1.57,
+        "upper": 1.57,
+        "effort": 10,
+        "velocity": 5
+      },
+      "actuation": "passive",
+      "frame_orientation_mode": "axis_aligned"
+    },
+    {
+      "joint_id": "link_007_joint",
+      "name": "link_007_joint",
+      "type": "revolute",
+      "parent": "link_005",
+      "child": "link_007",
+      "origin": {
+        "xyz": [
+          53.79889606,
+          -70.47796163,
+          -187.9
+        ],
+        "rpy": [
+          3.141592653589793,
+          0,
+          0
+        ]
+      },
+      "axis": [
+        0,
+        0,
+        -1
+      ],
+      "limit": {
+        "lower": -1.57,
+        "upper": 1.57,
+        "effort": 10,
+        "velocity": 5
+      },
+      "actuation": "passive",
+      "frame_orientation_mode": "axis_aligned"
+    },
+    {
+      "joint_id": "link_008_joint",
+      "name": "link_008_joint",
+      "type": "revolute",
+      "parent": "link_007",
+      "child": "link_008",
+      "origin": {
+        "xyz": [
+          104.08175564,
+          -37.74213978,
+          -191.7
+        ],
+        "rpy": [
+          3.141592653589793,
+          0,
+          0
+        ]
+      },
+      "axis": [
+        0,
+        0,
+        -1
+      ],
+      "limit": {
+        "lower": -1.57,
+        "upper": 1.57,
+        "effort": 10,
+        "velocity": 5
+      },
+      "actuation": "passive",
+      "frame_orientation_mode": "axis_aligned"
+    },
+    {
+      "joint_id": "link_009_joint",
+      "name": "link_009_joint",
+      "type": "revolute",
+      "parent": "link_002",
+      "child": "link_009",
+      "origin": {
+        "xyz": [
+          92.18524257,
+          -3.76460343,
+          -187.3
+        ],
+        "rpy": [
+          3.141592653589793,
+          0,
+          0
+        ]
+      },
+      "axis": [
+        0,
+        0,
+        -1
+      ],
+      "limit": {
+        "lower": -1.57,
+        "upper": 1.57,
+        "effort": 10,
+        "velocity": 5
+      },
+      "actuation": "passive",
+      "frame_orientation_mode": "axis_aligned"
+    },
+    {
+      "joint_id": "link_010_joint",
+      "name": "link_010_joint",
+      "type": "continuous",
+      "parent": "link_009",
+      "child": "link_010",
+      "origin": {
+        "xyz": [
+          0,
+          90.71227762,
+          -185.3
+        ],
+        "rpy": [
+          3.141592653589793,
+          0,
+          0
+        ]
+      },
+      "axis": [
+        0,
+        0,
+        -1
+      ],
+      "limit": {
+        "lower": -6.2832,
+        "upper": 6.2832,
+        "effort": 10,
+        "velocity": 5
+      },
+      "actuation": "position",
+      "frame_orientation_mode": "axis_aligned"
+    },
+    {
+      "joint_id": "link_011_joint",
+      "name": "link_011_joint",
+      "type": "revolute",
+      "parent": "link_002",
+      "child": "link_011",
+      "origin": {
+        "xyz": [
+          25.67408357,
+          -51.42711973,
+          -190.8
+        ],
+        "rpy": [
+          3.141592653589793,
+          0,
+          0
+        ]
+      },
+      "axis": [
+        0,
+        0,
+        -1
+      ],
+      "limit": {
+        "lower": -1.57,
+        "upper": 1.57,
+        "effort": 10,
+        "velocity": 5
+      },
+      "actuation": "passive",
+      "frame_orientation_mode": "axis_aligned"
+    },
+    {
+      "joint_id": "link_012_joint",
+      "name": "link_012_joint",
+      "type": "prismatic",
+      "parent": "link_011",
+      "child": "link_012",
+      "origin": {
+        "xyz": [
+          43.562697334200145,
+          -29.288053979554,
+          -196.65
+        ],
+        "rpy": [
+          -1.5707963267948966,
+          0,
+          -0.6796067829944322
+        ]
+      },
+      "axis": [
+        0.6284872205984027,
+        0.7778199107405869,
+        0
+      ],
+      "limit": {
+        "lower": -0.1,
+        "upper": 0.1,
+        "effort": 10,
+        "velocity": 5
+      },
+      "actuation": "passive",
+      "frame_orientation_mode": "axis_aligned"
+    },
+    {
+      "joint_id": "link_013_joint",
+      "name": "link_013_joint",
+      "type": "revolute",
+      "parent": "link_012",
+      "child": "link_013",
+      "origin": {
+        "xyz": [
+          82.52890505,
+          18.93678046,
+          -198
+        ],
+        "rpy": [
+          3.141592653589793,
+          0,
+          0
+        ]
+      },
+      "axis": [
+        0,
+        0,
+        -1
+      ],
+      "limit": {
+        "lower": -1.57,
+        "upper": 1.57,
+        "effort": 10,
+        "velocity": 5
+      },
+      "actuation": "auto",
+      "frame_orientation_mode": "axis_aligned"
+    },
+    {
+      "joint_id": "link_014_joint",
+      "name": "link_014_joint",
+      "type": "continuous",
+      "parent": "base_link",
+      "child": "link_014",
+      "origin": {
+        "xyz": [
+          0,
+          -63.78027682,
+          38
+        ],
+        "rpy": [
+          0,
+          0,
+          0
+        ]
+      },
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "limit": {
+        "lower": -1.57,
+        "upper": 1.57,
+        "effort": 10,
+        "velocity": 5
+      },
+      "actuation": "position",
+      "frame_orientation_mode": "axis_aligned"
+    },
+    {
+      "joint_id": "link_015_joint",
+      "name": "link_015_joint",
+      "type": "revolute",
+      "parent": "base_link",
+      "child": "link_015",
+      "origin": {
+        "xyz": [
+          0,
+          -63.78027682,
+          38
+        ],
+        "rpy": [
+          0,
+          0,
+          0
+        ]
+      },
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "limit": {
+        "lower": -0.3316,
+        "upper": 0.8727,
+        "effort": 10,
+        "velocity": 5
+      },
+      "actuation": "position",
+      "frame_orientation_mode": "axis_aligned"
+    },
+    {
+      "joint_id": "link_016_joint",
+      "name": "link_016_joint",
+      "type": "revolute",
+      "parent": "link_015",
+      "child": "link_016",
+      "origin": {
+        "xyz": [
+          -41.90238298,
+          -36.50042528,
+          47.3
+        ],
+        "rpy": [
+          0,
+          0,
+          0
+        ]
+      },
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "limit": {
+        "lower": -1.57,
+        "upper": 1.57,
+        "effort": 10,
+        "velocity": 5
+      },
+      "actuation": "passive",
+      "frame_orientation_mode": "axis_aligned"
+    },
+    {
+      "joint_id": "link_017_joint",
+      "name": "link_017_joint",
+      "type": "revolute",
+      "parent": "link_014",
+      "child": "link_017",
+      "origin": {
+        "xyz": [
+          41.90238298,
+          -36.50042528,
+          48.4
+        ],
+        "rpy": [
+          0,
+          0,
+          0
+        ]
+      },
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "limit": {
+        "lower": -1.57,
+        "upper": 1.57,
+        "effort": 10,
+        "velocity": 5
+      },
+      "actuation": "passive",
+      "frame_orientation_mode": "axis_aligned"
+    },
+    {
+      "joint_id": "link_018_joint",
+      "name": "link_018_joint",
+      "type": "revolute",
+      "parent": "link_016",
+      "child": "link_018",
+      "origin": {
+        "xyz": [
+          0,
+          6.44361156,
+          48.8
+        ],
+        "rpy": [
+          0,
+          0,
+          0
+        ]
+      },
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "limit": {
+        "lower": -1.57,
+        "upper": 1.57,
+        "effort": 10,
+        "velocity": 5
+      },
+      "actuation": "passive",
+      "frame_orientation_mode": "axis_aligned"
+    },
+    {
+      "joint_id": "link_019_joint",
+      "name": "link_019_joint",
+      "type": "revolute",
+      "parent": "link_017",
+      "child": "link_019",
+      "origin": {
+        "xyz": [
+          53.79889606,
+          -70.47796163,
+          49.9
+        ],
+        "rpy": [
+          0,
+          0,
+          0
+        ]
+      },
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "limit": {
+        "lower": -1.57,
+        "upper": 1.57,
+        "effort": 10,
+        "velocity": 5
+      },
+      "actuation": "passive",
+      "frame_orientation_mode": "axis_aligned"
+    },
+    {
+      "joint_id": "link_020_joint",
+      "name": "link_020_joint",
+      "type": "revolute",
+      "parent": "link_014",
+      "child": "link_020",
+      "origin": {
+        "xyz": [
+          92.18524257,
+          -3.76460343,
+          49.3
+        ],
+        "rpy": [
+          0,
+          0,
+          0
+        ]
+      },
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "limit": {
+        "lower": -1.57,
+        "upper": 1.57,
+        "effort": 10,
+        "velocity": 5
+      },
+      "actuation": "passive",
+      "frame_orientation_mode": "axis_aligned"
+    },
+    {
+      "joint_id": "link_021_joint",
+      "name": "link_021_joint",
+      "type": "revolute",
+      "parent": "link_019",
+      "child": "link_021",
+      "origin": {
+        "xyz": [
+          104.08175564,
+          -37.74213978,
+          44.2
+        ],
+        "rpy": [
+          0,
+          0,
+          0
+        ]
+      },
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "limit": {
+        "lower": -1.57,
+        "upper": 1.57,
+        "effort": 10,
+        "velocity": 5
+      },
+      "actuation": "passive",
+      "frame_orientation_mode": "axis_aligned"
+    },
+    {
+      "joint_id": "link_022_joint",
+      "name": "link_022_joint",
+      "type": "revolute",
+      "parent": "link_014",
+      "child": "link_022",
+      "origin": {
+        "xyz": [
+          25.67408357,
+          -51.42711973,
+          60
+        ],
+        "rpy": [
+          0,
+          0,
+          0
+        ]
+      },
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "limit": {
+        "lower": -1.57,
+        "upper": 1.57,
+        "effort": 10,
+        "velocity": 5
+      },
+      "actuation": "passive",
+      "frame_orientation_mode": "axis_aligned"
+    },
+    {
+      "joint_id": "link_023_joint",
+      "name": "link_023_joint",
+      "type": "prismatic",
+      "parent": "link_022",
+      "child": "link_023",
+      "origin": {
+        "xyz": [
+          43.562697334200145,
+          -29.288053979554,
+          58.65
+        ],
+        "rpy": [
+          -1.5707963267948966,
+          0,
+          -0.6796067829944322
+        ]
+      },
+      "axis": [
+        0.6284872205984027,
+        0.7778199107405869,
+        0
+      ],
+      "limit": {
+        "lower": -0.1,
+        "upper": 0.1,
+        "effort": 10,
+        "velocity": 5
+      },
+      "actuation": "passive",
+      "frame_orientation_mode": "axis_aligned"
+    },
+    {
+      "joint_id": "link_024_joint",
+      "name": "link_024_joint",
+      "type": "revolute",
+      "parent": "link_023",
+      "child": "link_024",
+      "origin": {
+        "xyz": [
+          82.52890505,
+          18.93678046,
+          60
+        ],
+        "rpy": [
+          0,
+          0,
+          0
+        ]
+      },
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "limit": {
+        "lower": -1.57,
+        "upper": 1.57,
+        "effort": 10,
+        "velocity": 5
+      },
+      "actuation": "passive",
+      "frame_orientation_mode": "axis_aligned"
+    },
+    {
+      "joint_id": "link_025_joint",
+      "name": "link_025_joint",
+      "type": "continuous",
+      "parent": "link_020",
+      "child": "link_025",
+      "origin": {
+        "xyz": [
+          0,
+          90.71227762,
+          88.8
+        ],
+        "rpy": [
+          0,
+          0,
+          0
+        ]
+      },
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "limit": {
+        "lower": -1.57,
+        "upper": 1.57,
+        "effort": 10,
+        "velocity": 5
+      },
+      "actuation": "position",
+      "frame_orientation_mode": "axis_aligned"
+    }
+  ],
+  "base_origin_mode": "cad_original",
+  "base_origin_xyz": [
+    0.006988524999997026,
+    -44.64013672,
+    -69
+  ],
+  "loop_constraints": [
+    {
+      "id": "closure_001",
+      "name": "closure_001",
+      "type": "connect",
+      "link_a": "link_004",
+      "link_b": "link_006",
+      "anchor_a": [
+        0,
+        6.44361156,
+        -185.3
+      ],
+      "anchor_b": [
+        0,
+        6.44361156,
+        -185.3
+      ],
+      "anchor_mode": "candidate",
+      "anchor_part_id": "part_036",
+      "anchor_link": "link_004",
+      "anchor_axis": [
+        0,
+        0,
+        -1
+      ],
+      "anchor_source_id": "geometry_part_036_1_step_circle_2",
+      "site_a": "closure_001_a_site",
+      "site_b": "closure_001_b_site"
+    },
+    {
+      "id": "closure_002",
+      "name": "closure_002",
+      "type": "connect",
+      "link_a": "link_009",
+      "link_b": "link_008",
+      "anchor_a": [
+        104.08175564,
+        -37.74213978,
+        -181.95
+      ],
+      "anchor_b": [
+        104.08175564,
+        -37.74213978,
+        -181.95
+      ],
+      "anchor_mode": "candidate",
+      "anchor_part_id": "part_033",
+      "anchor_link": "link_008",
+      "anchor_axis": [
+        0,
+        0,
+        -1
+      ],
+      "anchor_source_id": "geometry_part_033_cylinder_surface_part_033_primitive_1_cylinder_3",
+      "site_a": "closure_002_a_site",
+      "site_b": "closure_002_b_site"
+    },
+    {
+      "id": "closure_003",
+      "name": "closure_003",
+      "type": "connect",
+      "link_a": "link_009",
+      "link_b": "link_013",
+      "anchor_a": [
+        82.528907775,
+        18.936779975,
+        -190.30000305
+      ],
+      "anchor_b": [
+        82.528907775,
+        18.936779975,
+        -190.30000305
+      ],
+      "anchor_mode": "auto",
+      "site_a": "closure_003_a_site",
+      "site_b": "closure_003_b_site"
+    },
+    {
+      "id": "joint_004",
+      "name": "joint_004",
+      "type": "connect",
+      "link_a": "link_009",
+      "link_b": "link_013",
+      "anchor_a": [
+        82.528907775,
+        18.936779975,
+        -190.30000305
+      ],
+      "anchor_b": [
+        82.528907775,
+        18.936779975,
+        -190.30000305
+      ],
+      "anchor_mode": "auto",
+      "site_a": "closure_003_a_site",
+      "site_b": "closure_003_b_site"
+    },
+    {
+      "id": "closure_005",
+      "name": "closure_005",
+      "type": "connect",
+      "link_a": "link_018",
+      "link_b": "link_017",
+      "anchor_a": [
+        0,
+        6.443611325,
+        44.024999615
+      ],
+      "anchor_b": [
+        0,
+        6.443611325,
+        44.024999615
+      ],
+      "anchor_mode": "auto",
+      "site_a": "closure_005_a_site",
+      "site_b": "closure_005_b_site"
+    },
+    {
+      "id": "closure_006",
+      "name": "closure_006",
+      "type": "connect",
+      "link_a": "link_021",
+      "link_b": "link_020",
+      "anchor_a": [
+        104.08175564,
+        -37.74213978,
+        43.95
+      ],
+      "anchor_b": [
+        104.08175564,
+        -37.74213978,
+        43.95
+      ],
+      "anchor_mode": "candidate",
+      "anchor_part_id": "part_006",
+      "anchor_link": "link_021",
+      "anchor_axis": [
+        0,
+        0,
+        1
+      ],
+      "anchor_source_id": "geometry_part_006_cylinder_surface_part_006_primitive_1_cylinder_3",
+      "site_a": "closure_006_a_site",
+      "site_b": "closure_006_b_site"
+    },
+    {
+      "id": "closure_007",
+      "name": "closure_007",
+      "type": "connect",
+      "link_a": "link_020",
+      "link_b": "link_024",
+      "anchor_a": [
+        82.528907775,
+        18.936779975,
+        52.29999924
+      ],
+      "anchor_b": [
+        82.528907775,
+        18.936779975,
+        52.29999924
+      ],
+      "anchor_mode": "auto",
+      "site_a": "closure_007_a_site",
+      "site_b": "closure_007_b_site"
+    }
+  ],
+  "mechanisms": [
+    {
+      "id": "mechanism_group_closure_001",
+      "kind": "compound_loop",
+      "links": [
+        "base_link",
+        "link_002",
+        "link_003",
+        "link_004",
+        "link_005",
+        "link_006",
+        "link_007",
+        "link_008",
+        "link_009",
+        "link_011",
+        "link_012",
+        "link_013"
+      ],
+      "joints": [
+        "link_004_joint",
+        "link_003_joint",
+        "link_002_joint",
+        "link_005_joint",
+        "link_006_joint",
+        "link_009_joint",
+        "link_007_joint",
+        "link_008_joint",
+        "link_011_joint",
+        "link_012_joint",
+        "link_013_joint"
+      ],
+      "constraints": [
+        "closure_001",
+        "closure_002",
+        "closure_003",
+        "joint_004"
+      ],
+      "actuated_joints": [
+        "link_003_joint",
+        "link_002_joint",
+        "link_004_joint"
+      ],
+      "passive_joints": [
+        "link_005_joint",
+        "link_006_joint",
+        "link_009_joint",
+        "link_007_joint",
+        "link_008_joint",
+        "link_011_joint",
+        "link_012_joint",
+        "link_013_joint"
+      ],
+      "dof": 3,
+      "cycle_count": 4,
+      "diagnostics": {
+        "constraint_rank_estimate": 8,
+        "movable_joint_count": 11,
+        "grouped": true
+      }
+    },
+    {
+      "id": "mechanism_group_closure_005",
+      "kind": "compound_loop",
+      "links": [
+        "base_link",
+        "link_014",
+        "link_015",
+        "link_016",
+        "link_017",
+        "link_018",
+        "link_019",
+        "link_020",
+        "link_021",
+        "link_022",
+        "link_023",
+        "link_024"
+      ],
+      "joints": [
+        "link_018_joint",
+        "link_016_joint",
+        "link_015_joint",
+        "link_014_joint",
+        "link_017_joint",
+        "link_021_joint",
+        "link_019_joint",
+        "link_020_joint",
+        "link_022_joint",
+        "link_023_joint",
+        "link_024_joint"
+      ],
+      "constraints": [
+        "closure_005",
+        "closure_006",
+        "closure_007"
+      ],
+      "actuated_joints": [
+        "link_015_joint",
+        "link_014_joint",
+        "link_018_joint",
+        "link_016_joint",
+        "link_017_joint"
+      ],
+      "passive_joints": [
+        "link_021_joint",
+        "link_019_joint",
+        "link_020_joint",
+        "link_022_joint",
+        "link_023_joint",
+        "link_024_joint"
+      ],
+      "dof": 5,
+      "cycle_count": 3,
+      "diagnostics": {
+        "constraint_rank_estimate": 6,
+        "movable_joint_count": 11,
+        "grouped": true
+      }
+    }
+  ],
+  "export_preferences": {
+    "merge_link_meshes": true
+  }
+}

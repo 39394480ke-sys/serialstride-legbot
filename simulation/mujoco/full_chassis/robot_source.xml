@@ -1,0 +1,325 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mujoco model="generated_robot">
+  <compiler angle="radian" eulerseq="xyz" autolimits="true" balanceinertia="true" boundinertia="1e-8" />
+  <asset>
+    <mesh name="base_link" file="meshes/base_link.stl" scale="0.001 0.001 0.001" />
+    <mesh name="link_002" file="meshes/link_002.stl" scale="0.001 0.001 0.001" />
+    <mesh name="link_003" file="meshes/link_003.stl" scale="0.001 0.001 0.001" />
+    <mesh name="link_004" file="meshes/link_004.stl" scale="0.001 0.001 0.001" />
+    <mesh name="link_005" file="meshes/link_005.stl" scale="0.001 0.001 0.001" />
+    <mesh name="link_006" file="meshes/link_006.stl" scale="0.001 0.001 0.001" />
+    <mesh name="link_007" file="meshes/link_007.stl" scale="0.001 0.001 0.001" />
+    <mesh name="link_008" file="meshes/link_008.stl" scale="0.001 0.001 0.001" />
+    <mesh name="link_009" file="meshes/link_009.stl" scale="0.001 0.001 0.001" />
+    <mesh name="link_010" file="meshes/link_010.stl" scale="0.001 0.001 0.001" />
+    <mesh name="link_011" file="meshes/link_011.stl" scale="0.001 0.001 0.001" />
+    <mesh name="link_012" file="meshes/link_012.stl" scale="0.001 0.001 0.001" />
+    <mesh name="link_013" file="meshes/link_013.stl" scale="0.001 0.001 0.001" />
+    <mesh name="link_014" file="meshes/link_014.stl" scale="0.001 0.001 0.001" />
+    <mesh name="link_015" file="meshes/link_015.stl" scale="0.001 0.001 0.001" />
+    <mesh name="link_016" file="meshes/link_016.stl" scale="0.001 0.001 0.001" />
+    <mesh name="link_017" file="meshes/link_017.stl" scale="0.001 0.001 0.001" />
+    <mesh name="link_018" file="meshes/link_018.stl" scale="0.001 0.001 0.001" />
+    <mesh name="link_019" file="meshes/link_019.stl" scale="0.001 0.001 0.001" />
+    <mesh name="link_020" file="meshes/link_020.stl" scale="0.001 0.001 0.001" />
+    <mesh name="link_021" file="meshes/link_021.stl" scale="0.001 0.001 0.001" />
+    <mesh name="link_022" file="meshes/link_022.stl" scale="0.001 0.001 0.001" />
+    <mesh name="link_023" file="meshes/link_023.stl" scale="0.001 0.001 0.001" />
+    <mesh name="link_024" file="meshes/link_024.stl" scale="0.001 0.001 0.001" />
+    <mesh name="link_025" file="meshes/link_025.stl" scale="0.001 0.001 0.001" />
+  </asset>
+  <worldbody>
+    <body name="base_link" pos="0 0 0">
+      <inertial pos="-0.0039338812 0.012467564 0.00023441092" mass="2.2" quat="0.99999671 0.0018797749 0.0011074883 -0.0013498581" diaginertia="0.0091017116 0.012533239 0.0081879634" />
+      <geom name="base_link_mesh_1" type="mesh" mesh="base_link" pos="-6.988525e-06 0.044640137 0.069" euler="0 0 0" group="1" />
+      <body name="link_002" pos="-6.988525e-06 -0.01914014 -0.107" euler="3.1415927 0 0">
+        <joint name="link_002_joint" type="hinge" pos="0 0 0" axis="0 0 1" range="-1.57 1.57" limited="true" damping="0.05" armature="0.0001" actuatorfrcrange="-10 10" actuatorfrclimited="true" />
+        <inertial pos="0.043355873 -0.027890749 -0.0023513789" mass="0.068" quat="0.96005319 0.0057525521 -0.0053518464 -0.27970722" diaginertia="1.1089343e-05 0.000105919 0.00011583082" />
+        <geom name="link_002_mesh_1" type="mesh" mesh="link_002" pos="0 -0.063780277 -0.176" euler="-3.1415927 0 0" group="1" />
+        <body name="link_005" pos="0.041902383 -0.027279852 0.0104">
+          <joint name="link_005_joint" type="hinge" pos="0 0 0" axis="0 0 1" range="-1.57 1.57" limited="true" damping="0.05" armature="0.0001" actuatorfrcrange="-10 10" actuatorfrclimited="true" />
+          <inertial pos="-0.0086987915 -0.0056228993 -0.0059453537" mass="0.02" quat="0.94761075 0.0023155369 0.014721452 -0.31907958" diaginertia="1.371313e-05 1.1046793e-06 1.4542672e-05" />
+          <geom name="link_005_mesh_1" type="mesh" mesh="link_005" pos="-0.041902383 -0.036500425 -0.1864" euler="-3.1415927 0 0" group="1" />
+          <body name="link_006" pos="-0.041902383 -0.042944037 -0.0042">
+            <joint name="link_006_joint" type="hinge" pos="0 0 0" axis="0 0 1" range="-1.57 1.57" limited="true" damping="0.05" armature="0.0001" actuatorfrcrange="-10 10" actuatorfrclimited="true" />
+            <inertial pos="0 0 -0.0030241159" mass="0.00077366434" quat="1 0 0 0" diaginertia="2.714709e-08 2.714709e-08 1e-08" />
+            <site name="closure_001_b_site" type="sphere" pos="0 0 0.0031" quat="6.123234e-17 -1 -0 -0" size="0.003" rgba="0.2 0.8 1 0" group="3" />
+            <geom name="link_006_mesh_1" type="mesh" mesh="link_006" pos="0 0.0064436116 -0.1822" euler="-3.1415927 0 0" group="1" />
+          </body>
+          <body name="link_007" pos="0.011896513 0.033977536 0.0015">
+            <joint name="link_007_joint" type="hinge" pos="0 0 0" axis="0 0 1" range="-1.57 1.57" limited="true" damping="0.05" armature="0.0001" actuatorfrcrange="-10 10" actuatorfrclimited="true" />
+            <inertial pos="0.025983961 -0.0150738 -0.0015000061" mass="0.006" quat="0.95865809 0 0 -0.28456049" diaginertia="8.4666046e-08 2.8064641e-06 2.8821301e-06" />
+            <geom name="link_007_mesh_1" type="mesh" mesh="link_007" pos="-0.053798896 -0.070477962 -0.1879" euler="-3.1415927 0 0" group="1" />
+            <body name="link_008" pos="0.05028286 -0.032735822 0.0038">
+              <joint name="link_008_joint" type="hinge" pos="0 0 0" axis="0 0 1" range="-1.57 1.57" limited="true" damping="0.05" armature="0.0001" actuatorfrcrange="-10 10" actuatorfrclimited="true" />
+              <inertial pos="-1.6348715e-10 0 -0.012524115" mass="0.00077366435" quat="1 0 0 0" diaginertia="2.714709e-08 2.7147092e-08 1e-08" />
+              <site name="closure_002_b_site" type="sphere" pos="0 0 -0.00975" quat="6.123234e-17 -1 -0 -0" size="0.003" rgba="0.2 0.8 1 0" group="3" />
+              <geom name="link_008_mesh_1" type="mesh" mesh="link_008" pos="-0.10408176 -0.03774214 -0.1917" euler="-3.1415927 0 0" group="1" />
+            </body>
+          </body>
+        </body>
+        <body name="link_009" pos="0.092185243 -0.060015673 0.0113">
+          <joint name="link_009_joint" type="hinge" pos="0 0 0" axis="0 0 1" range="-1.57 1.57" limited="true" damping="0.05" armature="0.0001" actuatorfrcrange="-10 10" actuatorfrclimited="true" />
+          <inertial pos="-0.044881355 -0.044738748 -0.0065144472" mass="0.056" quat="0.93100646 8.9174307e-05 0.00055309838 -0.36500228" diaginertia="0.00017003599 5.9620694e-06 0.00017553873" />
+          <site name="closure_002_a_site" type="sphere" pos="0.011896513 0.033977536 -0.00535" quat="6.123234e-17 -1 -0 -0" size="0.003" rgba="0.2 0.8 1 0" group="3" />
+          <site name="closure_003_a_site" type="sphere" pos="-0.0096563348 -0.022701383 0.003000003" quat="6.123234e-17 -1 -0 -0" size="0.003" rgba="0.2 0.8 1 0" group="3" />
+          <site name="closure_003_a_site_2" type="sphere" pos="-0.0096563348 -0.022701383 0.003000003" quat="6.123234e-17 -1 -0 -0" size="0.003" rgba="0.2 0.8 1 0" group="3" />
+          <geom name="link_009_mesh_1" type="mesh" mesh="link_009" pos="-0.092185243 -0.0037646034 -0.1873" euler="-3.1415927 0 0" group="1" />
+          <body name="link_010" pos="-0.092185243 -0.094476881 -0.002">
+            <joint name="link_010_joint" type="hinge" pos="0 0 0" axis="0 0 1" actuatorfrcrange="-10 10" actuatorfrclimited="true" />
+            <inertial pos="-5.6331932e-10 5.1670869e-10 0.02192814" mass="0.6" quat="0.92610537 6.6177875e-09 5.0505982e-09 -0.37726496" diaginertia="0.00031780173 0.00031777765 0.00048461086" />
+            <geom name="link_010_mesh_1" type="mesh" mesh="link_010" pos="0 0.090712278 -0.1853" euler="-3.1415927 0 0" group="1" />
+          </body>
+        </body>
+        <body name="link_011" pos="0.025674084 -0.012353157 0.0148">
+          <joint name="link_011_joint" type="hinge" pos="0 0 0" axis="0 0 1" range="-1.57 1.57" limited="true" damping="0.05" armature="0.0001" actuatorfrcrange="-10 10" actuatorfrclimited="true" />
+          <inertial pos="0.009774161 -0.012096566 0.0058500007" mass="0.0015472858" quat="0.94282022 0 0 0.33330173" diaginertia="2.4763342e-07 1.4707227e-08 2.5743148e-07" />
+          <geom name="link_011_mesh_1" type="mesh" mesh="link_011" pos="-0.025674084 -0.05142712 -0.1908" euler="-3.1415927 0 0" group="1" />
+          <body name="link_012" pos="0.017888614 -0.022139066 0.00585" euler="1.5707963 0.67960678 0">
+            <joint name="link_012_joint" type="slide" pos="0 0 0" axis="0 0 1" range="-0.1 0.1" limited="true" damping="0.05" armature="0.0001" actuatorfrcrange="-10 10" actuatorfrclimited="true" />
+            <inertial pos="0 -2.1792665e-09 0.027778315" mass="0.011455286" quat="1 -1.2953341e-08 0 0" diaginertia="3.253869e-06 3.2636643e-06 3.1061603e-07" />
+            <geom name="link_012_mesh_1" type="mesh" mesh="link_012" pos="-0.052291101 -0.19665 -0.004597767" euler="1.5707963 0 0.67960678" group="1" />
+            <body name="link_013" pos="0 0.00135 0.062" euler="-1.5707963 0 -0.67960678">
+              <joint name="link_013_joint" type="hinge" pos="0 0 0" axis="0 0 1" range="-1.57 1.57" limited="true" damping="0.05" armature="0.0001" actuatorfrcrange="-10 10" actuatorfrclimited="true" />
+              <inertial pos="3.5097968e-09 1.3745365e-09 -0.0076999969" mass="0.00022249231" quat="1 0 0 0" diaginertia="1e-08 1e-08 1e-08" />
+              <site name="closure_003_b_site" type="sphere" pos="2.725e-09 4.85e-10 -0.007699997" quat="6.123234e-17 -1 -0 -0" size="0.003" rgba="0.2 0.8 1 0" group="3" />
+              <site name="closure_003_b_site_2" type="sphere" pos="2.725e-09 4.85e-10 -0.007699997" quat="6.123234e-17 -1 -0 -0" size="0.003" rgba="0.2 0.8 1 0" group="3" />
+              <geom name="link_013_mesh_1" type="mesh" mesh="link_013" pos="-0.082528905 0.01893678 -0.198" euler="-3.1415927 0 0" group="1" />
+            </body>
+          </body>
+        </body>
+      </body>
+      <body name="link_003" pos="-6.988525e-06 -0.01914014 -0.107" euler="3.1415927 0 0">
+        <joint name="link_003_joint" type="hinge" pos="0 0 0" axis="0 0 1" range="-0.8727 0.384" limited="true" damping="0.05" armature="0.0001" actuatorfrcrange="-10 10" actuatorfrclimited="true" />
+        <inertial pos="-0.013750144 -0.0086053748 0.0051026116" mass="0.014" quat="0.95476232 -0.00082331343 0.0018096997 0.29736334" diaginertia="8.1373094e-07 5.4510139e-06 6.2085423e-06" />
+        <geom name="link_003_mesh_1" type="mesh" mesh="link_003" pos="0 -0.063780277 -0.176" euler="-3.1415927 0 0" group="1" />
+        <body name="link_004" pos="-0.041902383 -0.027279852 0.0123">
+          <joint name="link_004_joint" type="hinge" pos="0 0 0" axis="0 0 1" range="-1.57 1.57" limited="true" damping="0.05" armature="0.0001" actuatorfrcrange="-10 10" actuatorfrclimited="true" />
+          <inertial pos="0.019845961 -0.022550464 -0.0014999969" mass="0.006" quat="0.92621212 0 0 0.3770028" diaginertia="2.8064644e-06 8.4666035e-08 2.8821304e-06" />
+          <site name="closure_001_a_site" type="sphere" pos="0.041902383 -0.042944037 -0.003" quat="6.123234e-17 -1 -0 -0" size="0.003" rgba="0.2 0.8 1 0" group="3" />
+          <geom name="link_004_mesh_1" type="mesh" mesh="link_004" pos="0.041902383 -0.036500425 -0.1883" euler="-3.1415927 0 0" group="1" />
+        </body>
+      </body>
+      <body name="link_014" pos="-6.988525e-06 -0.01914014 0.107">
+        <joint name="link_014_joint" type="hinge" pos="0 0 0" axis="0 0 1" range="-1.57 1.57" limited="true" damping="0.05" armature="0.0001" actuatorfrcrange="-10 10" actuatorfrclimited="true" />
+        <inertial pos="0.043355873 0.027890749 -0.002351379" mass="0.068" quat="0.96005319 -0.0057525511 -0.0053518473 0.27970722" diaginertia="1.1089343e-05 0.000105919 0.00011583082" />
+        <geom name="link_014_mesh_1" type="mesh" mesh="link_014" pos="0 0.063780277 -0.038" euler="0 0 0" group="1" />
+        <body name="link_017" pos="0.041902383 0.027279852 0.0104">
+          <joint name="link_017_joint" type="hinge" pos="0 0 0" axis="0 0 1" range="-1.57 1.57" limited="true" damping="0.05" armature="0.0001" actuatorfrcrange="-10 10" actuatorfrclimited="true" />
+          <inertial pos="-0.0086987905 0.0056228986 -0.0059453564" mass="0.02" quat="0.94761075 -0.0023155297 0.014721406 0.31907958" diaginertia="1.3713129e-05 1.1046793e-06 1.454267e-05" />
+          <site name="closure_005_b_site" type="sphere" pos="-0.041902383 0.042944037 -0.0043750004" quat="1 0 -0 0" size="0.003" rgba="0.2 0.8 1 0" group="3" />
+          <geom name="link_017_mesh_1" type="mesh" mesh="link_017" pos="-0.041902383 0.036500425 -0.0484" euler="0 0 0" group="1" />
+          <body name="link_019" pos="0.011896513 -0.033977536 0.0015">
+            <joint name="link_019_joint" type="hinge" pos="0 0 0" axis="0 0 1" range="-1.57 1.57" limited="true" damping="0.05" armature="0.0001" actuatorfrcrange="-10 10" actuatorfrclimited="true" />
+            <inertial pos="0.025983961 0.0150738 -0.0014999985" mass="0.006" quat="0.95865809 0 0 0.28456049" diaginertia="8.4666046e-08 2.8064641e-06 2.8821301e-06" />
+            <geom name="link_019_mesh_1" type="mesh" mesh="link_019" pos="-0.053798896 0.070477962 -0.0499" euler="0 0 0" group="1" />
+            <body name="link_021" pos="0.05028286 0.032735822 -0.0057">
+              <joint name="link_021_joint" type="hinge" pos="0 0 0" axis="0 0 1" range="-1.57 1.57" limited="true" damping="0.05" armature="0.0001" actuatorfrcrange="-10 10" actuatorfrclimited="true" />
+              <inertial pos="-1.6983999e-10 -1.0368893e-10 -0.00302412" mass="0.00077366534" quat="1 0 0 0" diaginertia="2.714714e-08 2.7147142e-08 1e-08" />
+              <site name="closure_006_a_site" type="sphere" pos="0 0 -0.00025" quat="1 0 -0 0" size="0.003" rgba="0.2 0.8 1 0" group="3" />
+              <geom name="link_021_mesh_1" type="mesh" mesh="link_021" pos="-0.10408176 0.03774214 -0.0442" euler="0 0 0" group="1" />
+            </body>
+          </body>
+        </body>
+        <body name="link_020" pos="0.092185243 0.060015673 0.0113">
+          <joint name="link_020_joint" type="hinge" pos="0 0 0" axis="0 0 1" range="-1.57 1.57" limited="true" damping="0.05" armature="0.0001" actuatorfrcrange="-10 10" actuatorfrclimited="true" />
+          <inertial pos="-0.044881355 0.044738748 -0.006514451" mass="0.056" quat="0.93100646 -8.9174364e-05 0.00055309824 0.36500228" diaginertia="0.00017003599 5.9620694e-06 0.00017553873" />
+          <site name="closure_006_b_site" type="sphere" pos="0.011896513 -0.033977536 -0.00535" quat="1 0 -0 0" size="0.003" rgba="0.2 0.8 1 0" group="3" />
+          <site name="closure_007_a_site" type="sphere" pos="-0.0096563348 0.022701383 0.0029999992" quat="1 0 -0 0" size="0.003" rgba="0.2 0.8 1 0" group="3" />
+          <geom name="link_020_mesh_1" type="mesh" mesh="link_020" pos="-0.092185243 0.0037646034 -0.0493" euler="0 0 0" group="1" />
+          <body name="link_025" pos="-0.092185243 0.094476881 0.0395">
+            <joint name="link_025_joint" type="hinge" pos="0 0 0" axis="0 0 1" actuatorfrcrange="-10 10" actuatorfrclimited="true" />
+            <inertial pos="-5.644982e-10 -5.174013e-10 -0.019571861" mass="0.6" quat="0.92610546 -6.6227602e-09 5.0848299e-09 0.37726473" diaginertia="0.00031780175 0.00031777766 0.00048461087" />
+            <geom name="link_025_mesh_1" type="mesh" mesh="link_025" pos="0 -0.090712278 -0.0888" euler="0 0 0" group="1" />
+          </body>
+        </body>
+        <body name="link_022" pos="0.025674084 0.012353157 0.022">
+          <joint name="link_022_joint" type="hinge" pos="0 0 0" axis="0 0 1" range="-1.57 1.57" limited="true" damping="0.05" armature="0.0001" actuatorfrcrange="-10 10" actuatorfrclimited="true" />
+          <inertial pos="0.0097741539 0.012096557 -0.0013500001" mass="0.0015472864" quat="0.94282022 0 0 -0.33330173" diaginertia="2.4763348e-07 1.470724e-08 2.5743155e-07" />
+          <geom name="link_022_mesh_1" type="mesh" mesh="link_022" pos="-0.025674084 0.05142712 -0.06" euler="0 0 0" group="1" />
+          <body name="link_023" pos="0.017888614 0.022139066 -0.00135" euler="-1.5707963 0.67960678 0">
+            <joint name="link_023_joint" type="slide" pos="0 0 0" axis="0 0 1" range="-0.1 0.1" limited="true" damping="0.05" armature="0.0001" actuatorfrcrange="-10 10" actuatorfrclimited="true" />
+            <inertial pos="0 6.0886668e-10 0.027778318" mass="0.011455284" quat="1 0 0 0" diaginertia="3.2538691e-06 3.2636645e-06 3.1061589e-07" />
+            <geom name="link_023_mesh_1" type="mesh" mesh="link_023" pos="-0.052291101 0.05865 -0.004597767" euler="1.5707963 0 0.67960678" group="1" />
+            <body name="link_024" pos="0 -0.00135 0.062" euler="1.5707963 0 0.67960678">
+              <joint name="link_024_joint" type="hinge" pos="0 0 0" axis="0 0 1" range="-1.57 1.57" limited="true" damping="0.05" armature="0.0001" actuatorfrcrange="-10 10" actuatorfrclimited="true" />
+              <inertial pos="3.509788e-09 -1.374538e-09 -0.0077000008" mass="0.00022249231" quat="1 0 0 0" diaginertia="1e-08 1e-08 1e-08" />
+              <site name="closure_007_b_site" type="sphere" pos="2.725e-09 -4.85e-10 -0.0077000008" quat="1 0 -0 0" size="0.003" rgba="0.2 0.8 1 0" group="3" />
+              <geom name="link_024_mesh_1" type="mesh" mesh="link_024" pos="-0.082528905 -0.01893678 -0.06" euler="0 0 0" group="1" />
+            </body>
+          </body>
+        </body>
+      </body>
+      <body name="link_015" pos="-6.988525e-06 -0.01914014 0.107">
+        <joint name="link_015_joint" type="hinge" pos="0 0 0" axis="0 0 1" range="-0.3316 0.8727" limited="true" damping="0.05" armature="0.0001" actuatorfrcrange="-10 10" actuatorfrclimited="true" />
+        <inertial pos="-0.013750144 0.0086053748 0.0051026154" mass="0.014" quat="0.95476232 0.00082331345 0.0018096997 -0.29736334" diaginertia="8.1373094e-07 5.4510139e-06 6.2085423e-06" />
+        <geom name="link_015_mesh_1" type="mesh" mesh="link_015" pos="0 0.063780277 -0.038" euler="0 0 0" group="1" />
+        <body name="link_016" pos="-0.041902383 0.027279852 0.0093">
+          <joint name="link_016_joint" type="hinge" pos="0 0 0" axis="0 0 1" range="-1.57 1.57" limited="true" damping="0.05" armature="0.0001" actuatorfrcrange="-10 10" actuatorfrclimited="true" />
+          <inertial pos="0.019845961 0.022550464 0.0014999992" mass="0.006" quat="0.92621212 0 0 -0.3770028" diaginertia="2.8064644e-06 8.4666035e-08 2.8821304e-06" />
+          <geom name="link_016_mesh_1" type="mesh" mesh="link_016" pos="0.041902383 0.036500425 -0.0473" euler="0 0 0" group="1" />
+          <body name="link_018" pos="0.041902383 0.042944037 0.0015">
+            <joint name="link_018_joint" type="hinge" pos="0 0 0" axis="0 0 1" range="-1.57 1.57" limited="true" damping="0.05" armature="0.0001" actuatorfrcrange="-10 10" actuatorfrclimited="true" />
+            <inertial pos="0 0 -0.0076241207" mass="0.00077366533" quat="1 0 0 0" diaginertia="2.714714e-08 2.714714e-08 1e-08" />
+            <site name="closure_005_a_site" type="sphere" pos="0 -2.35e-10 -0.0047750004" quat="1 0 -0 0" size="0.003" rgba="0.2 0.8 1 0" group="3" />
+            <geom name="link_018_mesh_1" type="mesh" mesh="link_018" pos="0 -0.0064436116 -0.0488" euler="0 0 0" group="1" />
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+  <contact>
+    <exclude body1="base_link" body2="link_002" />
+    <exclude body1="base_link" body2="link_003" />
+    <exclude body1="base_link" body2="link_004" />
+    <exclude body1="base_link" body2="link_005" />
+    <exclude body1="base_link" body2="link_006" />
+    <exclude body1="base_link" body2="link_007" />
+    <exclude body1="base_link" body2="link_008" />
+    <exclude body1="base_link" body2="link_009" />
+    <exclude body1="base_link" body2="link_011" />
+    <exclude body1="base_link" body2="link_012" />
+    <exclude body1="base_link" body2="link_013" />
+    <exclude body1="base_link" body2="link_014" />
+    <exclude body1="base_link" body2="link_015" />
+    <exclude body1="base_link" body2="link_016" />
+    <exclude body1="base_link" body2="link_017" />
+    <exclude body1="base_link" body2="link_018" />
+    <exclude body1="base_link" body2="link_019" />
+    <exclude body1="base_link" body2="link_020" />
+    <exclude body1="base_link" body2="link_021" />
+    <exclude body1="base_link" body2="link_022" />
+    <exclude body1="base_link" body2="link_023" />
+    <exclude body1="base_link" body2="link_024" />
+    <exclude body1="link_002" body2="link_003" />
+    <exclude body1="link_002" body2="link_004" />
+    <exclude body1="link_002" body2="link_005" />
+    <exclude body1="link_002" body2="link_006" />
+    <exclude body1="link_002" body2="link_007" />
+    <exclude body1="link_002" body2="link_008" />
+    <exclude body1="link_002" body2="link_009" />
+    <exclude body1="link_002" body2="link_011" />
+    <exclude body1="link_002" body2="link_012" />
+    <exclude body1="link_002" body2="link_013" />
+    <exclude body1="link_003" body2="link_004" />
+    <exclude body1="link_003" body2="link_005" />
+    <exclude body1="link_003" body2="link_006" />
+    <exclude body1="link_003" body2="link_007" />
+    <exclude body1="link_003" body2="link_008" />
+    <exclude body1="link_003" body2="link_009" />
+    <exclude body1="link_003" body2="link_011" />
+    <exclude body1="link_003" body2="link_012" />
+    <exclude body1="link_003" body2="link_013" />
+    <exclude body1="link_004" body2="link_005" />
+    <exclude body1="link_004" body2="link_006" />
+    <exclude body1="link_004" body2="link_007" />
+    <exclude body1="link_004" body2="link_008" />
+    <exclude body1="link_004" body2="link_009" />
+    <exclude body1="link_004" body2="link_011" />
+    <exclude body1="link_004" body2="link_012" />
+    <exclude body1="link_004" body2="link_013" />
+    <exclude body1="link_005" body2="link_006" />
+    <exclude body1="link_005" body2="link_007" />
+    <exclude body1="link_005" body2="link_008" />
+    <exclude body1="link_005" body2="link_009" />
+    <exclude body1="link_005" body2="link_011" />
+    <exclude body1="link_005" body2="link_012" />
+    <exclude body1="link_005" body2="link_013" />
+    <exclude body1="link_006" body2="link_007" />
+    <exclude body1="link_006" body2="link_008" />
+    <exclude body1="link_006" body2="link_009" />
+    <exclude body1="link_006" body2="link_011" />
+    <exclude body1="link_006" body2="link_012" />
+    <exclude body1="link_006" body2="link_013" />
+    <exclude body1="link_007" body2="link_008" />
+    <exclude body1="link_007" body2="link_009" />
+    <exclude body1="link_007" body2="link_011" />
+    <exclude body1="link_007" body2="link_012" />
+    <exclude body1="link_007" body2="link_013" />
+    <exclude body1="link_008" body2="link_009" />
+    <exclude body1="link_008" body2="link_011" />
+    <exclude body1="link_008" body2="link_012" />
+    <exclude body1="link_008" body2="link_013" />
+    <exclude body1="link_009" body2="link_011" />
+    <exclude body1="link_009" body2="link_012" />
+    <exclude body1="link_009" body2="link_013" />
+    <exclude body1="link_011" body2="link_012" />
+    <exclude body1="link_011" body2="link_013" />
+    <exclude body1="link_012" body2="link_013" />
+    <exclude body1="link_014" body2="link_015" />
+    <exclude body1="link_014" body2="link_016" />
+    <exclude body1="link_014" body2="link_017" />
+    <exclude body1="link_014" body2="link_018" />
+    <exclude body1="link_014" body2="link_019" />
+    <exclude body1="link_014" body2="link_020" />
+    <exclude body1="link_014" body2="link_021" />
+    <exclude body1="link_014" body2="link_022" />
+    <exclude body1="link_014" body2="link_023" />
+    <exclude body1="link_014" body2="link_024" />
+    <exclude body1="link_015" body2="link_016" />
+    <exclude body1="link_015" body2="link_017" />
+    <exclude body1="link_015" body2="link_018" />
+    <exclude body1="link_015" body2="link_019" />
+    <exclude body1="link_015" body2="link_020" />
+    <exclude body1="link_015" body2="link_021" />
+    <exclude body1="link_015" body2="link_022" />
+    <exclude body1="link_015" body2="link_023" />
+    <exclude body1="link_015" body2="link_024" />
+    <exclude body1="link_016" body2="link_017" />
+    <exclude body1="link_016" body2="link_018" />
+    <exclude body1="link_016" body2="link_019" />
+    <exclude body1="link_016" body2="link_020" />
+    <exclude body1="link_016" body2="link_021" />
+    <exclude body1="link_016" body2="link_022" />
+    <exclude body1="link_016" body2="link_023" />
+    <exclude body1="link_016" body2="link_024" />
+    <exclude body1="link_017" body2="link_018" />
+    <exclude body1="link_017" body2="link_019" />
+    <exclude body1="link_017" body2="link_020" />
+    <exclude body1="link_017" body2="link_021" />
+    <exclude body1="link_017" body2="link_022" />
+    <exclude body1="link_017" body2="link_023" />
+    <exclude body1="link_017" body2="link_024" />
+    <exclude body1="link_018" body2="link_019" />
+    <exclude body1="link_018" body2="link_020" />
+    <exclude body1="link_018" body2="link_021" />
+    <exclude body1="link_018" body2="link_022" />
+    <exclude body1="link_018" body2="link_023" />
+    <exclude body1="link_018" body2="link_024" />
+    <exclude body1="link_019" body2="link_020" />
+    <exclude body1="link_019" body2="link_021" />
+    <exclude body1="link_019" body2="link_022" />
+    <exclude body1="link_019" body2="link_023" />
+    <exclude body1="link_019" body2="link_024" />
+    <exclude body1="link_020" body2="link_021" />
+    <exclude body1="link_020" body2="link_022" />
+    <exclude body1="link_020" body2="link_023" />
+    <exclude body1="link_020" body2="link_024" />
+    <exclude body1="link_021" body2="link_022" />
+    <exclude body1="link_021" body2="link_023" />
+    <exclude body1="link_021" body2="link_024" />
+    <exclude body1="link_022" body2="link_023" />
+    <exclude body1="link_022" body2="link_024" />
+    <exclude body1="link_023" body2="link_024" />
+  </contact>
+  <equality>
+    <connect name="closure_001" solref="0.004 1" solimp="0.99 0.999 0.0001 0.5 2" site1="closure_001_a_site" site2="closure_001_b_site" />
+    <connect name="closure_002" solref="0.004 1" solimp="0.99 0.999 0.0001 0.5 2" site1="closure_002_a_site" site2="closure_002_b_site" />
+    <connect name="closure_003" solref="0.004 1" solimp="0.99 0.999 0.0001 0.5 2" site1="closure_003_a_site" site2="closure_003_b_site" />
+    <connect name="joint_004" solref="0.004 1" solimp="0.99 0.999 0.0001 0.5 2" site1="closure_003_a_site_2" site2="closure_003_b_site_2" />
+    <connect name="closure_005" solref="0.004 1" solimp="0.99 0.999 0.0001 0.5 2" site1="closure_005_a_site" site2="closure_005_b_site" />
+    <connect name="closure_006" solref="0.004 1" solimp="0.99 0.999 0.0001 0.5 2" site1="closure_006_a_site" site2="closure_006_b_site" />
+    <connect name="closure_007" solref="0.004 1" solimp="0.99 0.999 0.0001 0.5 2" site1="closure_007_a_site" site2="closure_007_b_site" />
+  </equality>
+  <actuator>
+    <position name="link_002_joint_position" joint="link_002_joint" kp="50" ctrlrange="-1.57 1.57" ctrllimited="true" />
+    <position name="link_003_joint_position" joint="link_003_joint" kp="50" ctrlrange="-0.8727 0.384" ctrllimited="true" />
+    <position name="link_010_joint_position" joint="link_010_joint" kp="50" ctrlrange="-6.2832 6.2832" ctrllimited="true" />
+    <position name="link_014_joint_position" joint="link_014_joint" kp="50" ctrlrange="-1.57 1.57" ctrllimited="true" />
+    <position name="link_015_joint_position" joint="link_015_joint" kp="50" ctrlrange="-0.3316 0.8727" ctrllimited="true" />
+    <position name="link_025_joint_position" joint="link_025_joint" kp="50" ctrlrange="-1.57 1.57" ctrllimited="true" />
+  </actuator>
+  <keyframe>
+    <key name="home" qpos="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0" />
+  </keyframe>
+</mujoco>
