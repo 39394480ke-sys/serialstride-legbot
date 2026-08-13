@@ -1,0 +1,61 @@
+schema_version: 1
+units: rad
+
+# q = direction * (raw - zero_raw). These q values are mechanical
+# extension-positive coordinates, not yet absolute planar link angles.
+joints:
+  joint_a:
+    zero_raw: 1.008
+    direction: 1
+    mechanical_limits_raw: [0.662, 1.354]
+    mechanical_limits_q: [-0.346, 0.346]
+    soft_limits_raw: [0.731, 1.285]
+    soft_limits_q: [-0.277, 0.277]
+  joint_b:
+    zero_raw: -1.307
+    direction: -1
+    mechanical_limits_raw: [-1.662, -0.951]
+    mechanical_limits_q: [-0.356, 0.355]
+    soft_limits_raw: [-1.591, -1.022]
+    soft_limits_q: [-0.285, 0.284]
+
+# These are previous-stage physical bring-up observations. The poses were
+# only visually symmetric, are not paired with the exact CAD reference poses,
+# and must not be used for FK accuracy validation.
+bringup_endpoint_observations:
+  CROUCH:
+    raw: {joint_a: 0.662, joint_b: -0.951}
+    q: {joint_a: -0.346, joint_b: -0.356}
+  CALIB_MID:
+    raw: {joint_a: 1.008, joint_b: -1.307}
+    q: {joint_a: 0.0, joint_b: 0.0}
+  EXTEND:
+    raw: {joint_a: 1.354, joint_b: -1.662}
+    q: {joint_a: 0.346, joint_b: 0.355}
+
+# Safe suspended targets retained as bring-up evidence, not standard poses.
+bringup_targets:
+  MID_CROUCH:
+    raw: {joint_a: 0.835, joint_b: -1.129}
+    q: {joint_a: -0.173, joint_b: -0.178}
+  MID_EXTEND:
+    raw: {joint_a: 1.181, joint_b: -1.484}
+    q: {joint_a: 0.173, joint_b: 0.177}
+
+planar_angle_mapping:
+  status: cad_geometry_confirmed
+  convention: counterclockwise_from_positive_x
+  joint_a:
+    link: AG
+    angle_at_calib_mid: -2.696809456
+    q_sign: 1
+  joint_b:
+    link: AB
+    angle_at_calib_mid: -0.444783197
+    q_sign: -1
+  note: The absolute angles are derived from user-supplied symmetric CAD coordinates.
+
+evidence:
+  status: repository_verified
+  source: firmware/dm-mc02-can1-three-motor/app/single_leg_bringup/single_leg_calibration.h
+  note: Repository values are verified; exact physical pose pairing remains unverified.

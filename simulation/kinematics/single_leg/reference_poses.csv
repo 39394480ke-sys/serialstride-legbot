@@ -1,0 +1,4 @@
+pose,qA_rad,qB_rad,Hx_m,Hz_m,AG_angle_rad,AB_angle_rad,evidence
+CROUCH,-0.343704199,-0.343704199,0.000000,-0.084900,-3.040513655,-0.101078998,CAD_symmetric_user_measurement
+CALIB_MID,0.000000000,0.000000000,0.000000,-0.134300,-2.696809456,-0.444783197,CAD_symmetric_user_measurement
+EXTEND,0.335214917,0.335214917,0.000000,-0.183700,-2.361594539,-0.779998115,CAD_symmetric_user_measurement
