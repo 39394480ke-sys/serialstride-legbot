@@ -11,7 +11,7 @@
     "Closed-chain MJCF adds position actuators only to selected or auto-detected driving joints; passive joints remain constraint-driven."
   ],
   "errors": [],
-  "mjcf_file": "robot.xml",
+  "mjcf_file": "robot_source.xml",
   "mesh_mode": "per_link",
   "mesh_files": [],
   "logical_mesh_count": 0,

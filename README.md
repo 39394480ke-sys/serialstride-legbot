@@ -7,11 +7,11 @@
 
 ## 当前阶段
 
-**当前状态：单腿正运动学与整车 MuJoCo 闭链几何数字模型已完成。**
+**当前状态：MuJoCo source / geometry / dynamics 三层模型职责已固化。**
 
-在已完成单腿机械 Bring-up 的基础上，仓库现已加入可测试的单腿 FK/工作空间
-模型，以及可稳定调试的整车闭链 MJCF。本阶段验证的是数字模型内部一致性，
-不代表已完成独立实物精度、承重、站立或动力学验证。
+在单腿 FK 和整车闭链模型基础上，仓库现已明确区分不可修改的 CAD source、
+权威 geometry 与派生 dynamics。机构设计和实物均支持连续无限 360 度旋转，
+MuJoCo 模型也完成了全旋转运动学、闭链约束和模态控制验证。
 
 - MC02 已验证编译、SWD 下载、1 ms 主循环和 CAN1 1 Mbps 通信。
 - CAN1 上的两台 DM4310 关节电机和一台 H6215 轮毂电机可同时在线。
@@ -24,8 +24,10 @@
 - 24 V 上下电两次读数一致，但尚未形成夹具化重复性验收。
 - 单腿模型采用 `l1=l4=0.110 m`、`l2=l3=0.132 m`、`l5=0`，FK 与角度转换测试通过。
 - 软限位内 32,761 个采样状态全部有效，工作空间为 `Hx=-37.33..37.07 mm`、`Hz=-176.16..-93.07 mm`。
-- 整车 MJCF 包含 25 个 body、24 个 joint、6 个 connect 和 4 个 actuator，声明总质量约 `3.7695 kg`。
-- 7 个 keyframe 的闭链残差约为 `1e-9 m`，阶跃测试最大残余速度约为 `2.01e-6 rad/s`。
+- `robot_source.xml` 保持 CAD 原始导出不变，并由 SHA-256 锁定。
+- 权威 `robot_geometry.xml` 包含 25 个 body、24 个 joint、6 个 connect、4 个 tendon、4 个模态 actuator 和 11 个 keyframe。
+- 11 个 keyframe 的最大闭链残差约为 `1.43e-9 m`，四个 rotation/shape 滑块的目标跟踪与左右腿隔离通过。
+- `robot_dynamics.xml` 保留为 Phase 1-3 快照；旧生成器已加迁移保护，写入前会停止。
 
 尚未验证：
 
@@ -37,13 +39,13 @@
 - 低增益下约 `0.04..0.07 rad` 的最终跟踪残差；
 - 一次 Disable 瞬间 JOINT_B `+0.212 rad/s` 单帧读数的原因。
 - 单腿 FK 的独立多姿态 SolidWorks/实物坐标精度；
-- 各 link 的质量分配、质心和惯量，以及气弹簧动力学和地面接触。
+- 各 link 的精确实物质量分配、质心和惯量，以及气弹簧动力学、地面接触和承重控制。
 
 下一阶段：
 
-1. 使用多个 SolidWorks/实物姿态独立验证 FK 坐标，再选定承重姿态。
-2. 补充各 link 质量、质心、惯量以及气弹簧和地面接触模型。
-3. 调查 Disable 瞬间速度样本和跟踪残差，并在支架与低力矩限制下开始受力验证。
+1. 迁移 geometry-to-dynamics 生成器，避免重复创建 tendon、keyframe 或 slide 归一化。
+2. 在 dynamics 中恢复 6 个力矩电机、阻尼、摩擦、armature、气弹簧力、重力和地面场景。
+3. 使用多个 SolidWorks/实物姿态验证 FK 坐标，并在支架和低力矩限制下开始受力验证。
 
 ## 项目目标
 
@@ -97,6 +99,7 @@ MC02 单侧三电机入口：
 - [单腿 FK 与工作空间](simulation/kinematics/single_leg/README.md)
 - [整车 MuJoCo 闭链几何模型](simulation/mujoco/full_chassis/README.md)
 - [2026-08-13 模型阶段记录](docs/progress/2026-08-13_单腿FK与整车MuJoCo模型.md)
+- [2026-08-14 三层模型职责重构](docs/progress/2026-08-14_MuJoCo三层模型职责重构.md)
 
 验证命令：
 
@@ -115,6 +118,7 @@ python3 simulation/mujoco/full_chassis/validate_model.py
 | 单腿悬空调试 | 已完成 | 方向、机械极限、软件限位与低速双关节协同 |
 | 单腿 FK 与工作空间 | 已完成 | 数字模型与软限位工作空间通过测试，实物精度验证豁免 |
 | 整车 MuJoCo 几何模型 | 已完成 | 闭链、keyframe 与阶跃稳定性验证通过 |
+| MuJoCo 三层模型职责 | 已完成 | CAD source、权威 geometry 与派生 dynamics 边界已固化 |
 | 单腿承重与动力学 | 未开始 | 独立实物坐标、质量参数、接触与受力验证 |
 | 整车站立、行驶与跳跃 | 未开始 | 需先完成单腿和双侧电控验证 |
 

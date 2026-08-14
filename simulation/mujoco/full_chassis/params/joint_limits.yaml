@@ -1,0 +1,93 @@
+schema_version: 2
+units:
+  hinge: rad
+  slide: m
+
+active_joint_types:
+  joint_a:
+    model_joints: [left_joint_a, right_joint_a]
+    calibration_mechanical_range: [-0.346, 0.346]
+    calibration_software_range: [-0.277, 0.277]
+    coordinate: extension_positive
+    source: firmware mechanical-contact capture, 100 samples per endpoint
+    confidence: MEASURED
+  joint_b:
+    model_joints: [left_joint_b, right_joint_b]
+    calibration_mechanical_range: [-0.356, 0.355]
+    calibration_software_range: [-0.285, 0.284]
+    coordinate: extension_positive
+    source: firmware mechanical-contact capture, 100 samples per endpoint
+    confidence: MEASURED
+
+modal_coordinates:
+  convention: extension_positive_active_joint_coordinates
+  inverse_mapping:
+    q_a: shape + rotation
+    q_b: shape - rotation
+  shape:
+    expression: (q_a + q_b) / 2
+    joint_coefficients: {joint_a: 0.5, joint_b: 0.5}
+    mechanical_range: [-0.351, 0.3505]
+    software_range: [-0.281, 0.2805]
+    range_source: paired joint_a/joint_b calibration endpoints
+    tendons:
+      left: {name: left_leg_shape, joints: [left_joint_a, left_joint_b]}
+      right: {name: right_leg_shape, joints: [right_joint_a, right_joint_b]}
+  rotation:
+    expression: (q_a - q_b) / 2
+    joint_coefficients: {joint_a: 0.5, joint_b: -0.5}
+    observation_range: [-3.141592653589793, 3.141592653589793]
+    physical_range_status: USER_VERIFIED_CONTINUOUS_360
+    tendons:
+      left: {name: left_leg_rotation, joints: [left_joint_a, left_joint_b]}
+      right: {name: right_leg_rotation, joints: [right_joint_a, right_joint_b]}
+  viewer_keyframes:
+    ROTATION_N180: -3.141592653589793
+    ROTATION_N090: -1.5707963267948966
+    ROTATION_P090: 1.5707963267948966
+    ROTATION_P180: 3.141592653589793
+
+gas_spring_slides:
+  left:
+    joint: link_012_joint
+    normalization_pose: EXTEND
+    range: [-0.0231, 0.0]
+  right:
+    joint: link_023_joint
+    normalization_pose: EXTEND
+    range: [-0.0231, 0.0]
+  coordinate: q=0 at maximum extension; q<0 when compressed
+  model_derived_pose_span_m: 0.023008515
+  physical_stroke_m: 0.023
+  physical_stroke_source: user estimate
+  confidence: USER_ESTIMATED
+  status: PROVISIONAL
+  note: Re-measure after the second mechanical revision is assembled.
+
+passive_hinges:
+  left:
+    link_005_joint: {model_range: [-1.57, 1.57], scan_observed_range: [-0.605428740401392, 0.247973266656494], confidence: ESTIMATED}
+    link_006_joint: {model_range: [-1.57, 1.57], scan_observed_range: [-2.0158624626045e-12, 1.93779914032349e-12], confidence: ESTIMATED}
+    link_007_joint: {model_range: [-1.57, 1.57], scan_observed_range: [-0.247973247858798, 0.605428750892693], confidence: ESTIMATED}
+    link_008_joint: {model_range: [-1.57, 1.57], scan_observed_range: [-3.61e-13, 1.067e-12], confidence: ESTIMATED}
+    link_009_joint: {model_range: [-1.57, 1.57], scan_observed_range: [-0.605428756627325, 0.247973249495578], confidence: ESTIMATED}
+    link_011_joint: {model_range: [-1.57, 1.57], scan_observed_range: [-0.0368436298760144, 0.0367602926816828], confidence: ESTIMATED}
+    link_013_joint: {model_range: [-1.57, 1.57], scan_observed_range: [-5.36721807248939e-10, 1.65403146940948e-09], confidence: ESTIMATED}
+    link_004_joint: {model_range: [-1.57, 1.57], scan_observed_range: [-0.247973266656492, 0.605428740401173], confidence: ESTIMATED}
+  right:
+    link_017_joint: {model_range: [-1.57, 1.57], scan_observed_range: [-0.24797326378124, 0.60542874339947], confidence: ESTIMATED}
+    link_019_joint: {model_range: [-1.57, 1.57], scan_observed_range: [-0.605428753890436, 0.247973244983544], confidence: ESTIMATED}
+    link_021_joint: {model_range: [-1.57, 1.57], scan_observed_range: [-1.039e-12, 4.112e-13], confidence: ESTIMATED}
+    link_020_joint: {model_range: [-1.57, 1.57], scan_observed_range: [-0.247973246620324, 0.60542875962691], confidence: ESTIMATED}
+    link_022_joint: {model_range: [-1.57, 1.57], scan_observed_range: [-0.0367602922031604, 0.0368436298685766], confidence: ESTIMATED}
+    link_024_joint: {model_range: [-1.57, 1.57], scan_observed_range: [-1.65407838289567e-09, 5.36735017277793e-10], confidence: ESTIMATED}
+    link_016_joint: {model_range: [-1.57, 1.57], scan_observed_range: [-0.605428738725448, 0.247973270030796], confidence: ESTIMATED}
+    link_018_joint: {model_range: [-1.57, 1.57], scan_observed_range: [-2.67776919281261e-09, 1.75631932908082e-08], confidence: ESTIMATED}
+  scan_grid: 25 rotation x 21 shape samples per leg
+  required_padding_fraction_of_observed_span: 0.15
+  observed_ranges_source: results/modal_scan_report.json
+  note: Approximate zero-motion closure hinges retain broad ranges to avoid false lockups.
+
+continuous_joints:
+  - left_wheel_joint
+  - right_wheel_joint
