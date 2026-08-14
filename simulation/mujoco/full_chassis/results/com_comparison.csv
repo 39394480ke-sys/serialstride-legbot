@@ -1,0 +1,8 @@
+pose,model_com_x_m,model_com_y_m,model_com_z_m,reference_com_x_m,reference_com_y_m,reference_com_z_m,comparison_status,notes
+CALIB_MID,-0.00185200691395527,-0.000136808917695838,-0.0462735832787259,,,,UNVERIFIED,No pose-matched SolidWorks or physical COM reference supplied.
+CROUCH,-0.0022559004138224,-0.000136808495749576,-0.0280902437371186,,,,UNVERIFIED,No pose-matched SolidWorks or physical COM reference supplied.
+EXTEND,-0.000970728571607944,-0.000136809333564232,-0.0641950025534843,,,,UNVERIFIED,No pose-matched SolidWorks or physical COM reference supplied.
+INTERMEDIATE_N025,-0.00219946932119563,-0.000136808602738174,-0.0327008076362141,,,,UNVERIFIED,No pose-matched SolidWorks or physical COM reference supplied.
+INTERMEDIATE_N0125,-0.00206101649207116,-0.000136808756777502,-0.0393389734897986,,,,UNVERIFIED,No pose-matched SolidWorks or physical COM reference supplied.
+INTERMEDIATE_P0125,-0.00157548584435185,-0.000136809078766363,-0.0532147512748623,,,,UNVERIFIED,No pose-matched SolidWorks or physical COM reference supplied.
+INTERMEDIATE_P025,-0.00123577451457371,-0.000136809233900048,-0.0599000774599587,,,,UNVERIFIED,No pose-matched SolidWorks or physical COM reference supplied.

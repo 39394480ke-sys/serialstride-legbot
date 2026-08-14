@@ -1,0 +1,50 @@
+{
+  "stage_phase": "Phase 0 - frozen geometry baseline",
+  "recorded_at": "2026-08-13T20:15:33+08:00",
+  "source_git_commit": "7afd3595aa1e24c30a589f8d59a842349a35262f",
+  "model": {
+    "path": "simulation/mujoco/full_chassis/robot_geometry.xml",
+    "sha256": "1a5fb12f0e452dd656210dcaefd5d75fb50e9be1d764190c68096f0abc072d13",
+    "byte_identical_at_freeze": [
+      "robot.xml",
+      "robot_geometry.xml",
+      "robot_dynamics.xml"
+    ],
+    "dynamics_copy_compile_verified": true
+  },
+  "runtime": {
+    "mujoco_version": "3.9.0",
+    "framework": "/Applications/MuJoCo.app/Contents/Frameworks/mujoco.framework/Versions/A/libmujoco.3.9.0.dylib"
+  },
+  "structure": {
+    "bodies": 25,
+    "joints": 24,
+    "equality_connects": 6,
+    "actuators": 4,
+    "declared_total_mass_kg": 3.76954478618
+  },
+  "initial": {
+    "max_abs_qvel": 0.0,
+    "max_abs_equality_residual_m": 1.29e-9
+  },
+  "keyframes": [
+    {"name": "CALIB_MID", "max_abs_equality_residual_m": 1.19e-9, "left_hz_m": -0.1343, "right_hz_m": -0.1343},
+    {"name": "CROUCH", "max_abs_equality_residual_m": 9.54e-10, "left_hz_m": -0.0849, "right_hz_m": -0.0849},
+    {"name": "EXTEND", "max_abs_equality_residual_m": 1.43e-9, "left_hz_m": -0.1837, "right_hz_m": -0.1837},
+    {"name": "INTERMEDIATE_N025", "max_abs_equality_residual_m": 1.01e-9, "left_hz_m": -0.0973, "right_hz_m": -0.0973},
+    {"name": "INTERMEDIATE_N0125", "max_abs_equality_residual_m": 1.10e-9, "left_hz_m": -0.1153, "right_hz_m": -0.1153},
+    {"name": "INTERMEDIATE_P0125", "max_abs_equality_residual_m": 1.29e-9, "left_hz_m": -0.1534, "right_hz_m": -0.1534},
+    {"name": "INTERMEDIATE_P025", "max_abs_equality_residual_m": 1.38e-9, "left_hz_m": -0.1718, "right_hz_m": -0.1718}
+  ],
+  "step_tests": {
+    "steps_per_scenario": 1000,
+    "timestep_s": 0.002,
+    "maximum_settled_abs_qvel_rad_s": 2.01e-6,
+    "maximum_settled_abs_equality_residual_m": 1.27e-9
+  },
+  "evidence_classification": {
+    "verified": "Structure, declared MJCF mass, residuals, velocities, hashes, and MuJoCo version were measured by validate_model.py and command-line hashing.",
+    "user_observed": "The user previously confirmed axes, side and A/B mapping, wheel alignment, gas-spring connections, and seven poses in the MuJoCo viewer.",
+    "unverified": "Per-body physical mass allocation, COM, inertia, gas-spring dynamics, gravity behavior, and ground contact remain unverified at Phase 0."
+  }
+}

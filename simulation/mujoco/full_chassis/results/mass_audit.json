@@ -1,0 +1,758 @@
+{
+  "schema_version": 1,
+  "status": "PASS_WITH_PROVISIONAL_INPUTS",
+  "model": "simulation/mujoco/full_chassis/robot_dynamics.xml",
+  "frozen_geometry": "robot_geometry.xml",
+  "structure": {
+    "body_count": 25,
+    "all_bodies_have_explicit_inertials": true,
+    "balanceinertia": false
+  },
+  "mass": {
+    "total_kg": 3.769544786179999,
+    "frozen_baseline_total_kg": 3.76954478618,
+    "delta_from_frozen_baseline_kg": -8.881784197001252e-16,
+    "categories_kg": {
+      "base_link": 2.2,
+      "left_gas_spring": 0.013225063410000001,
+      "left_links": 0.17154732968000003,
+      "left_wheel": 0.6,
+      "right_gas_spring": 0.013225063410000001,
+      "right_links": 0.17154732968000003,
+      "right_wheel": 0.6
+    },
+    "confidence_body_counts": {
+      "B": 15,
+      "C": 4,
+      "D": 6
+    },
+    "provisional_bodies": [
+      "link_011",
+      "link_012",
+      "link_013",
+      "link_022",
+      "link_023",
+      "link_024"
+    ],
+    "physical_total_mass_comparison": {
+      "status": "UNVERIFIED",
+      "reason": "No precise physical whole-robot mass reference was supplied."
+    }
+  },
+  "com_by_pose": [
+    {
+      "pose": "CALIB_MID",
+      "model_com_m": [
+        -0.00185200691395527,
+        -0.000136808917695838,
+        -0.0462735832787259
+      ],
+      "reference_com_m": null,
+      "comparison_status": "UNVERIFIED",
+      "max_abs_qvel": 0.0,
+      "max_abs_equality_residual_m": 1.19238059703708e-09
+    },
+    {
+      "pose": "CROUCH",
+      "model_com_m": [
+        -0.0022559004138224,
+        -0.000136808495749576,
+        -0.0280902437371186
+      ],
+      "reference_com_m": null,
+      "comparison_status": "UNVERIFIED",
+      "max_abs_qvel": 0.0,
+      "max_abs_equality_residual_m": 9.5370461528077e-10
+    },
+    {
+      "pose": "EXTEND",
+      "model_com_m": [
+        -0.000970728571607944,
+        -0.000136809333564232,
+        -0.0641950025534843
+      ],
+      "reference_com_m": null,
+      "comparison_status": "UNVERIFIED",
+      "max_abs_qvel": 0.0,
+      "max_abs_equality_residual_m": 1.43323897194847e-09
+    },
+    {
+      "pose": "INTERMEDIATE_N025",
+      "model_com_m": [
+        -0.00219946932119563,
+        -0.000136808602738174,
+        -0.0327008076362141
+      ],
+      "reference_com_m": null,
+      "comparison_status": "UNVERIFIED",
+      "max_abs_qvel": 0.0,
+      "max_abs_equality_residual_m": 1.0119851623358e-09
+    },
+    {
+      "pose": "INTERMEDIATE_N0125",
+      "model_com_m": [
+        -0.00206101649207116,
+        -0.000136808756777502,
+        -0.0393389734897986
+      ],
+      "reference_com_m": null,
+      "comparison_status": "UNVERIFIED",
+      "max_abs_qvel": 0.0,
+      "max_abs_equality_residual_m": 1.09900363809423e-09
+    },
+    {
+      "pose": "INTERMEDIATE_P0125",
+      "model_com_m": [
+        -0.00157548584435185,
+        -0.000136809078766363,
+        -0.0532147512748623
+      ],
+      "reference_com_m": null,
+      "comparison_status": "UNVERIFIED",
+      "max_abs_qvel": 0.0,
+      "max_abs_equality_residual_m": 1.28673979804539e-09
+    },
+    {
+      "pose": "INTERMEDIATE_P025",
+      "model_com_m": [
+        -0.00123577451457371,
+        -0.000136809233900048,
+        -0.0599000774599587
+      ],
+      "reference_com_m": null,
+      "comparison_status": "UNVERIFIED",
+      "max_abs_qvel": 0.0,
+      "max_abs_equality_residual_m": 1.37677802491964e-09
+    }
+  ],
+  "solidworks_com_comparison": {
+    "status": "UNVERIFIED",
+    "reason": "No pose-matched SolidWorks assembly COM was supplied."
+  },
+  "runtime": {
+    "mujoco_version": "3.9.0",
+    "compile": "PASS",
+    "maximum_keyframe_abs_qvel": 0.0,
+    "maximum_keyframe_equality_residual_m": 1.43323897194847e-09
+  },
+  "bodies": [
+    {
+      "body_name": "base_link",
+      "category": "base_link",
+      "side": "center",
+      "mirror_of": null,
+      "mass_kg": 2.2,
+      "com_m": [
+        -0.0039338812,
+        0.012467564,
+        0.00023441092
+      ],
+      "principal_inertia_kg_m2": [
+        0.0091017116,
+        0.012533239,
+        0.0081879634
+      ],
+      "equivalent_inertia_box_m": [
+        0.178015505964049,
+        0.11389511921859591,
+        0.19150352856943775
+      ],
+      "confidence": "B",
+      "status": "BASELINE"
+    },
+    {
+      "body_name": "link_002",
+      "category": "left_links",
+      "side": "left",
+      "mirror_of": null,
+      "mass_kg": 0.068,
+      "com_m": [
+        0.043355873,
+        -0.027890749,
+        -0.0023513789
+      ],
+      "principal_inertia_kg_m2": [
+        1.1089343e-05,
+        0.000105919,
+        0.00011583082
+      ],
+      "equivalent_inertia_box_m": [
+        0.1363366757224879,
+        0.043046995181053524,
+        0.01019309022010962
+      ],
+      "confidence": "B",
+      "status": "BASELINE"
+    },
+    {
+      "body_name": "link_005",
+      "category": "left_links",
+      "side": "left",
+      "mirror_of": null,
+      "mass_kg": 0.02,
+      "com_m": [
+        -0.0086987915,
+        -0.0056228993,
+        -0.0059453537
+      ],
+      "principal_inertia_kg_m2": [
+        1.37131295e-05,
+        1.1046793e-06,
+        1.4542671e-05
+      ],
+      "equivalent_inertia_box_m": [
+        0.024088716030540108,
+        0.09025151721716372,
+        0.009085226469384254
+      ],
+      "confidence": "B",
+      "status": "BASELINE"
+    },
+    {
+      "body_name": "link_006",
+      "category": "left_links",
+      "side": "left",
+      "mirror_of": null,
+      "mass_kg": 0.000773664835,
+      "com_m": [
+        0.0,
+        0.0,
+        -0.0030241159
+      ],
+      "principal_inertia_kg_m2": [
+        2.7147115e-08,
+        2.7147115e-08,
+        1e-08
+      ],
+      "equivalent_inertia_box_m": [
+        0.008806415989623975,
+        0.008806415989623975,
+        0.018534154315214928
+      ],
+      "confidence": "C",
+      "status": "ESTIMATED"
+    },
+    {
+      "body_name": "link_007",
+      "category": "left_links",
+      "side": "left",
+      "mirror_of": null,
+      "mass_kg": 0.006,
+      "com_m": [
+        0.025983961,
+        -0.0150738,
+        -0.0015000061
+      ],
+      "principal_inertia_kg_m2": [
+        8.4666046e-08,
+        2.8064641e-06,
+        2.8821301e-06
+      ],
+      "equivalent_inertia_box_m": [
+        0.07485938921738541,
+        0.012662229108652235,
+        0.003000007666656905
+      ],
+      "confidence": "B",
+      "status": "BASELINE"
+    },
+    {
+      "body_name": "link_008",
+      "category": "left_links",
+      "side": "left",
+      "mirror_of": null,
+      "mass_kg": 0.000773664845,
+      "com_m": [
+        -1.6348715e-10,
+        0.0,
+        -0.012524115
+      ],
+      "principal_inertia_kg_m2": [
+        2.7147115e-08,
+        2.7147117e-08,
+        1e-08
+      ],
+      "equivalent_inertia_box_m": [
+        0.008806416813351885,
+        0.0088064150520687,
+        0.018534154613866077
+      ],
+      "confidence": "C",
+      "status": "ESTIMATED"
+    },
+    {
+      "body_name": "link_009",
+      "category": "left_links",
+      "side": "left",
+      "mirror_of": null,
+      "mass_kg": 0.056,
+      "com_m": [
+        -0.044881355,
+        -0.044738748,
+        -0.0065144472
+      ],
+      "principal_inertia_kg_m2": [
+        0.00017003599,
+        5.9620694e-06,
+        0.00017553873
+      ],
+      "equivalent_inertia_box_m": [
+        0.03504814454025042,
+        0.19075395069864964,
+        0.007015259388341525
+      ],
+      "confidence": "B",
+      "status": "BASELINE"
+    },
+    {
+      "body_name": "link_010",
+      "category": "left_wheel",
+      "side": "left",
+      "mirror_of": null,
+      "mass_kg": 0.6,
+      "com_m": [
+        -5.6331932e-10,
+        5.1670869e-10,
+        0.02192814
+      ],
+      "principal_inertia_kg_m2": [
+        0.00031780174,
+        0.000317777655,
+        0.000484610865
+      ],
+      "equivalent_inertia_box_m": [
+        0.06961226759702632,
+        0.06961572738972137,
+        0.0388546689601134
+      ],
+      "confidence": "B",
+      "status": "BASELINE"
+    },
+    {
+      "body_name": "link_011",
+      "category": "left_gas_spring",
+      "side": "left",
+      "mirror_of": null,
+      "mass_kg": 0.0015472861,
+      "com_m": [
+        0.009774161,
+        -0.012096566,
+        0.0058500007
+      ],
+      "principal_inertia_kg_m2": [
+        2.4763345e-07,
+        1.47072335e-08,
+        2.57431515e-07
+      ],
+      "equivalent_inertia_box_m": [
+        0.00974810754098858,
+        0.043606057866000934,
+        0.004363091115790525
+      ],
+      "confidence": "D",
+      "status": "PROVISIONAL"
+    },
+    {
+      "body_name": "link_012",
+      "category": "left_gas_spring",
+      "side": "left",
+      "mirror_of": null,
+      "mass_kg": 0.011455285,
+      "com_m": [
+        0.0,
+        -2.1792665e-09,
+        0.027778315
+      ],
+      "principal_inertia_kg_m2": [
+        3.25386905e-06,
+        3.2636644e-06,
+        3.1061596e-07
+      ],
+      "equivalent_inertia_box_m": [
+        0.01295467716435717,
+        0.012552391313577847,
+        0.057017827008266866
+      ],
+      "confidence": "D",
+      "status": "PROVISIONAL"
+    },
+    {
+      "body_name": "link_013",
+      "category": "left_gas_spring",
+      "side": "left",
+      "mirror_of": null,
+      "mass_kg": 0.00022249231,
+      "com_m": [
+        3.5097968e-09,
+        1.3745365e-09,
+        -0.0076999969
+      ],
+      "principal_inertia_kg_m2": [
+        1e-08,
+        1e-08,
+        1e-08
+      ],
+      "equivalent_inertia_box_m": [
+        0.016421700329314014,
+        0.016421700329314014,
+        0.016421700329314014
+      ],
+      "confidence": "D",
+      "status": "PROVISIONAL"
+    },
+    {
+      "body_name": "link_003",
+      "category": "left_links",
+      "side": "left",
+      "mirror_of": null,
+      "mass_kg": 0.014,
+      "com_m": [
+        -0.013750144,
+        -0.0086053748,
+        0.0051026116
+      ],
+      "principal_inertia_kg_m2": [
+        8.1373094e-07,
+        5.4510139e-06,
+        6.2085423e-06
+      ],
+      "equivalent_inertia_box_m": [
+        0.06817778836039114,
+        0.02594989132925223,
+        0.004907830769000004
+      ],
+      "confidence": "B",
+      "status": "BASELINE"
+    },
+    {
+      "body_name": "link_004",
+      "category": "left_links",
+      "side": "left",
+      "mirror_of": null,
+      "mass_kg": 0.006,
+      "com_m": [
+        0.019845961,
+        -0.022550464,
+        -0.0014999969
+      ],
+      "principal_inertia_kg_m2": [
+        2.8064644e-06,
+        8.4666035e-08,
+        2.8821304e-06
+      ],
+      "equivalent_inertia_box_m": [
+        0.012662228674289523,
+        0.0748593932983697,
+        0.0030000058333276725
+      ],
+      "confidence": "B",
+      "status": "BASELINE"
+    },
+    {
+      "body_name": "link_014",
+      "category": "right_links",
+      "side": "right",
+      "mirror_of": "link_002",
+      "mass_kg": 0.068,
+      "com_m": [
+        0.043355873,
+        0.027890749,
+        -0.002351379
+      ],
+      "principal_inertia_kg_m2": [
+        1.1089343e-05,
+        0.000105919,
+        0.00011583082
+      ],
+      "equivalent_inertia_box_m": [
+        0.1363366757224879,
+        0.043046995181053524,
+        0.01019309022010962
+      ],
+      "confidence": "B",
+      "status": "BASELINE"
+    },
+    {
+      "body_name": "link_017",
+      "category": "right_links",
+      "side": "right",
+      "mirror_of": "link_005",
+      "mass_kg": 0.02,
+      "com_m": [
+        -0.0086987905,
+        0.0056228986,
+        -0.0059453564
+      ],
+      "principal_inertia_kg_m2": [
+        1.37131295e-05,
+        1.1046793e-06,
+        1.4542671e-05
+      ],
+      "equivalent_inertia_box_m": [
+        0.024088716030540108,
+        0.09025151721716372,
+        0.009085226469384254
+      ],
+      "confidence": "B",
+      "status": "BASELINE"
+    },
+    {
+      "body_name": "link_019",
+      "category": "right_links",
+      "side": "right",
+      "mirror_of": "link_007",
+      "mass_kg": 0.006,
+      "com_m": [
+        0.025983961,
+        0.0150738,
+        -0.0014999985
+      ],
+      "principal_inertia_kg_m2": [
+        8.4666046e-08,
+        2.8064641e-06,
+        2.8821301e-06
+      ],
+      "equivalent_inertia_box_m": [
+        0.07485938921738541,
+        0.012662229108652235,
+        0.003000007666656905
+      ],
+      "confidence": "B",
+      "status": "BASELINE"
+    },
+    {
+      "body_name": "link_021",
+      "category": "right_links",
+      "side": "right",
+      "mirror_of": "link_008",
+      "mass_kg": 0.000773664845,
+      "com_m": [
+        -1.6983999e-10,
+        -1.0368893e-10,
+        -0.00302412
+      ],
+      "principal_inertia_kg_m2": [
+        2.7147115e-08,
+        2.7147117e-08,
+        1e-08
+      ],
+      "equivalent_inertia_box_m": [
+        0.008806416813351885,
+        0.0088064150520687,
+        0.018534154613866077
+      ],
+      "confidence": "C",
+      "status": "ESTIMATED"
+    },
+    {
+      "body_name": "link_020",
+      "category": "right_links",
+      "side": "right",
+      "mirror_of": "link_009",
+      "mass_kg": 0.056,
+      "com_m": [
+        -0.044881355,
+        0.044738748,
+        -0.006514451
+      ],
+      "principal_inertia_kg_m2": [
+        0.00017003599,
+        5.9620694e-06,
+        0.00017553873
+      ],
+      "equivalent_inertia_box_m": [
+        0.03504814454025042,
+        0.19075395069864964,
+        0.007015259388341525
+      ],
+      "confidence": "B",
+      "status": "BASELINE"
+    },
+    {
+      "body_name": "link_025",
+      "category": "right_wheel",
+      "side": "right",
+      "mirror_of": "link_010",
+      "mass_kg": 0.6,
+      "com_m": [
+        -5.644982e-10,
+        -5.174013e-10,
+        -0.019571861
+      ],
+      "principal_inertia_kg_m2": [
+        0.00031780174,
+        0.000317777655,
+        0.000484610865
+      ],
+      "equivalent_inertia_box_m": [
+        0.06961226759702632,
+        0.06961572738972137,
+        0.0388546689601134
+      ],
+      "confidence": "B",
+      "status": "BASELINE"
+    },
+    {
+      "body_name": "link_022",
+      "category": "right_gas_spring",
+      "side": "right",
+      "mirror_of": "link_011",
+      "mass_kg": 0.0015472861,
+      "com_m": [
+        0.0097741539,
+        0.012096557,
+        -0.0013500001
+      ],
+      "principal_inertia_kg_m2": [
+        2.4763345e-07,
+        1.47072335e-08,
+        2.57431515e-07
+      ],
+      "equivalent_inertia_box_m": [
+        0.00974810754098858,
+        0.043606057866000934,
+        0.004363091115790525
+      ],
+      "confidence": "D",
+      "status": "PROVISIONAL"
+    },
+    {
+      "body_name": "link_023",
+      "category": "right_gas_spring",
+      "side": "right",
+      "mirror_of": "link_012",
+      "mass_kg": 0.011455285,
+      "com_m": [
+        0.0,
+        6.0886668e-10,
+        0.027778318
+      ],
+      "principal_inertia_kg_m2": [
+        3.25386905e-06,
+        3.2636644e-06,
+        3.1061596e-07
+      ],
+      "equivalent_inertia_box_m": [
+        0.01295467716435717,
+        0.012552391313577847,
+        0.057017827008266866
+      ],
+      "confidence": "D",
+      "status": "PROVISIONAL"
+    },
+    {
+      "body_name": "link_024",
+      "category": "right_gas_spring",
+      "side": "right",
+      "mirror_of": "link_013",
+      "mass_kg": 0.00022249231,
+      "com_m": [
+        3.509788e-09,
+        -1.374538e-09,
+        -0.0077000008
+      ],
+      "principal_inertia_kg_m2": [
+        1e-08,
+        1e-08,
+        1e-08
+      ],
+      "equivalent_inertia_box_m": [
+        0.016421700329314014,
+        0.016421700329314014,
+        0.016421700329314014
+      ],
+      "confidence": "D",
+      "status": "PROVISIONAL"
+    },
+    {
+      "body_name": "link_015",
+      "category": "right_links",
+      "side": "right",
+      "mirror_of": "link_003",
+      "mass_kg": 0.014,
+      "com_m": [
+        -0.013750144,
+        0.0086053748,
+        0.0051026154
+      ],
+      "principal_inertia_kg_m2": [
+        8.1373094e-07,
+        5.4510139e-06,
+        6.2085423e-06
+      ],
+      "equivalent_inertia_box_m": [
+        0.06817778836039114,
+        0.02594989132925223,
+        0.004907830769000004
+      ],
+      "confidence": "B",
+      "status": "BASELINE"
+    },
+    {
+      "body_name": "link_016",
+      "category": "right_links",
+      "side": "right",
+      "mirror_of": "link_004",
+      "mass_kg": 0.006,
+      "com_m": [
+        0.019845961,
+        0.022550464,
+        0.0014999992
+      ],
+      "principal_inertia_kg_m2": [
+        2.8064644e-06,
+        8.4666035e-08,
+        2.8821304e-06
+      ],
+      "equivalent_inertia_box_m": [
+        0.012662228674289523,
+        0.0748593932983697,
+        0.0030000058333276725
+      ],
+      "confidence": "B",
+      "status": "BASELINE"
+    },
+    {
+      "body_name": "link_018",
+      "category": "right_links",
+      "side": "right",
+      "mirror_of": "link_006",
+      "mass_kg": 0.000773664835,
+      "com_m": [
+        0.0,
+        0.0,
+        -0.0076241207
+      ],
+      "principal_inertia_kg_m2": [
+        2.7147115e-08,
+        2.7147115e-08,
+        1e-08
+      ],
+      "equivalent_inertia_box_m": [
+        0.008806415989623975,
+        0.008806415989623975,
+        0.018534154315214928
+      ],
+      "confidence": "C",
+      "status": "ESTIMATED"
+    }
+  ],
+  "evidence_classification": {
+    "verified": [
+      "CSV/MJCF synchronization",
+      "positive and physically balanced principal inertias",
+      "MuJoCo compilation with balanceinertia=false",
+      "model mass totals and keyframe COM values",
+      "left/right mass and principal-inertia derivation"
+    ],
+    "user_observed": [
+      "Existing SolidWorks-assigned masses approximately agree with the physical build."
+    ],
+    "unverified": [
+      "Precise physical total mass",
+      "Pose-matched SolidWorks or physical whole-robot COM",
+      "Gas-spring physical mass",
+      "Omitted fastener and moving-bearing mass allocation"
+    ]
+  }
+}
