@@ -82,7 +82,7 @@ passive_hinges:
     link_022_joint: {model_range: [-1.57, 1.57], scan_observed_range: [-0.0367602922031604, 0.0368436298685766], confidence: ESTIMATED}
     link_024_joint: {model_range: [-1.57, 1.57], scan_observed_range: [-1.65407838289567e-09, 5.36735017277793e-10], confidence: ESTIMATED}
     link_016_joint: {model_range: [-1.57, 1.57], scan_observed_range: [-0.605428738725448, 0.247973270030796], confidence: ESTIMATED}
-    link_018_joint: {model_range: [-1.57, 1.57], scan_observed_range: [-2.67776919281261e-09, 1.75631932908082e-08], confidence: ESTIMATED}
+    link_018_joint: {model_range: [-1.57, 1.57], scan_observed_range: [-2.68458471222693e-09, 7.09582827426828e-09], confidence: ESTIMATED}
   scan_grid: 25 rotation x 21 shape samples per leg
   required_padding_fraction_of_observed_span: 0.15
   observed_ranges_source: results/modal_scan_report.json

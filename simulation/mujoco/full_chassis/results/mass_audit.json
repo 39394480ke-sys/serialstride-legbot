@@ -123,6 +123,54 @@
       "comparison_status": "UNVERIFIED",
       "max_abs_qvel": 0.0,
       "max_abs_equality_residual_m": 1.37677802491964e-09
+    },
+    {
+      "pose": "ROTATION_N180",
+      "model_com_m": [
+        0.00644964823910692,
+        -0.000136806737962427,
+        0.0476597799635585
+      ],
+      "reference_com_m": null,
+      "comparison_status": "UNVERIFIED",
+      "max_abs_qvel": 0.0,
+      "max_abs_equality_residual_m": 1.19238061091487e-09
+    },
+    {
+      "pose": "ROTATION_N090",
+      "model_com_m": [
+        -0.0446678609585661,
+        -0.000136807731508745,
+        0.00484392591894732
+      ],
+      "reference_com_m": null,
+      "comparison_status": "UNVERIFIED",
+      "max_abs_qvel": 0.0,
+      "max_abs_equality_residual_m": 1.19238061091487e-09
+    },
+    {
+      "pose": "ROTATION_P090",
+      "model_com_m": [
+        0.0492655022837185,
+        -0.00013680792414952,
+        -0.00345772923411446
+      ],
+      "reference_com_m": null,
+      "comparison_status": "UNVERIFIED",
+      "max_abs_qvel": 0.0,
+      "max_abs_equality_residual_m": 1.19238058315929e-09
+    },
+    {
+      "pose": "ROTATION_P180",
+      "model_com_m": [
+        0.00644964823910723,
+        -0.00013680673796243,
+        0.0476597799635585
+      ],
+      "reference_com_m": null,
+      "comparison_status": "UNVERIFIED",
+      "max_abs_qvel": 0.0,
+      "max_abs_equality_residual_m": 1.19238061091487e-09
     }
   ],
   "solidworks_com_comparison": {

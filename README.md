@@ -7,11 +7,12 @@
 
 ## 当前阶段
 
-**当前状态：MuJoCo source / geometry / dynamics 三层模型职责已固化。**
+**当前状态：整车 MuJoCo 基础动力学数值基线已完成。**
 
 在单腿 FK 和整车闭链模型基础上，仓库现已明确区分不可修改的 CAD source、
-权威 geometry 与派生 dynamics。机构设计和实物均支持连续无限 360 度旋转，
-MuJoCo 模型也完成了全旋转运动学、闭链约束和模态控制验证。
+权威 geometry 与派生 dynamics，并为整车加入质量惯量、重力、六电机直接力矩
+输入和地面接触。机构设计和实物均支持连续无限 360 度旋转，MuJoCo 模型也
+完成了全旋转运动学、闭链约束和模态控制验证。
 
 - MC02 已验证编译、SWD 下载、1 ms 主循环和 CAN1 1 Mbps 通信。
 - CAN1 上的两台 DM4310 关节电机和一台 H6215 轮毂电机可同时在线。
@@ -27,7 +28,10 @@ MuJoCo 模型也完成了全旋转运动学、闭链约束和模态控制验证�
 - `robot_source.xml` 保持 CAD 原始导出不变，并由 SHA-256 锁定。
 - 权威 `robot_geometry.xml` 包含 25 个 body、24 个 joint、6 个 connect、4 个 tendon、4 个模态 actuator 和 11 个 keyframe。
 - 11 个 keyframe 的最大闭链残差约为 `1.43e-9 m`，四个 rotation/shape 滑块的目标跟踪与左右腿隔离通过。
-- `robot_dynamics.xml` 保留为 Phase 1-3 快照；旧生成器已加迁移保护，写入前会停止。
+- `robot_dynamics.xml` 已恢复由权威 geometry 和参数表确定性生成，包含 25 个显式惯量与 6 个直接力矩 motor。
+- fixed-base、free-ground 和低高度 drop 三个场景已可编译；轮地碰撞和被动参数仍是临时工程基线。
+- free-ground 与 drop 的全部 11 个 keyframe 已通过 5 秒有限状态、接触和闭链检查，最大动态闭链残差约为 `0.0496 mm`。
+- 气弹簧的 `60 N` 标称值和 `23 mm` 行程已记录，但气弹簧力在当前模型中保持禁用。
 
 尚未验证：
 
@@ -39,13 +43,16 @@ MuJoCo 模型也完成了全旋转运动学、闭链约束和模态控制验证�
 - 低增益下约 `0.04..0.07 rad` 的最终跟踪残差；
 - 一次 Disable 瞬间 JOINT_B `+0.212 rad/s` 单帧读数的原因。
 - 单腿 FK 的独立多姿态 SolidWorks/实物坐标精度；
-- 各 link 的精确实物质量分配、质心和惯量，以及气弹簧动力学、地面接触和承重控制。
+- 各 link 的精确实物质量分配、同姿态整车质心和惯量；
+- 实物阻尼、摩擦、armature、轮地接触和沉降参数辨识；
+- 电机完整力矩-转速包络、热降额和 60 秒长时稳定性；
+- 气弹簧预载、刚度、阻尼与力-行程曲线，以及实物承重和站立控制。
 
 下一阶段：
 
-1. 迁移 geometry-to-dynamics 生成器，避免重复创建 tendon、keyframe 或 slide 归一化。
-2. 在 dynamics 中恢复 6 个力矩电机、阻尼、摩擦、armature、气弹簧力、重力和地面场景。
-3. 使用多个 SolidWorks/实物姿态验证 FK 坐标，并在支架和低力矩限制下开始受力验证。
+1. 辨识实物关节阻尼、摩擦、armature 与轮地接触参数，逐步替换临时工程基线。
+2. 补做 60 秒长时稳定性、同姿态整车质量与质心验证，并完善电机热降额边界。
+3. 在支架和低力矩限制下开始实物承重与站立控制；气弹簧力学作为独立增量延期处理。
 
 ## 项目目标
 
@@ -100,12 +107,14 @@ MC02 单侧三电机入口：
 - [整车 MuJoCo 闭链几何模型](simulation/mujoco/full_chassis/README.md)
 - [2026-08-13 模型阶段记录](docs/progress/2026-08-13_单腿FK与整车MuJoCo模型.md)
 - [2026-08-14 三层模型职责重构](docs/progress/2026-08-14_MuJoCo三层模型职责重构.md)
+- [2026-08-16 基础动力学模型](docs/progress/2026-08-16_MuJoCo基础动力学模型.md)
 
 验证命令：
 
 ```sh
 (cd simulation/kinematics/single_leg && python3 -m unittest -v test_forward_kinematics.py)
 python3 simulation/mujoco/full_chassis/validate_model.py
+python3 simulation/mujoco/full_chassis/scripts/validate_dynamics.py
 ```
 
 ## 进度概览
@@ -119,7 +128,8 @@ python3 simulation/mujoco/full_chassis/validate_model.py
 | 单腿 FK 与工作空间 | 已完成 | 数字模型与软限位工作空间通过测试，实物精度验证豁免 |
 | 整车 MuJoCo 几何模型 | 已完成 | 闭链、keyframe 与阶跃稳定性验证通过 |
 | MuJoCo 三层模型职责 | 已完成 | CAD source、权威 geometry 与派生 dynamics 边界已固化 |
-| 单腿承重与动力学 | 未开始 | 独立实物坐标、质量参数、接触与受力验证 |
+| 整车 MuJoCo 基础动力学 | 已完成 | 质量惯量、重力、六电机力矩输入、地面场景与 5 秒数值回归通过 |
+| 单腿承重与实物动力学 | 未开始 | 实物质量、被动参数、接触辨识与受力验证 |
 | 整车站立、行驶与跳跃 | 未开始 | 需先完成单腿和双侧电控验证 |
 
 ## 版本路线

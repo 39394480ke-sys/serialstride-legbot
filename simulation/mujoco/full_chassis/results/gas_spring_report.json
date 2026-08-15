@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "status": "VERIFIED_INTERFACE_FORCE_UNVERIFIED",
+  "model_enabled": false,
+  "formula": "F = force_extended_n + stiffness_n_per_m * compression_m - damping_n_s_per_m * slide_velocity_m_s",
+  "coordinate": "q=0 at maximum extension; compression=-q",
+  "force_parameters": {
+    "force_extended_n": 60.0,
+    "stiffness_n_per_m": null,
+    "damping_n_s_per_m": null
+  },
+  "poses": [
+    {
+      "pose": "CROUCH",
+      "sides": {
+        "left": {
+          "joint": "link_012_joint",
+          "slide_position_m": -0.023008514846011,
+          "compression_m": 0.023008514846011,
+          "slide_velocity_m_s": 0.0,
+          "force_n": null,
+          "at_range_limit": false
+        },
+        "right": {
+          "joint": "link_023_joint",
+          "slide_position_m": -0.0230085148680617,
+          "compression_m": 0.0230085148680617,
+          "slide_velocity_m_s": 0.0,
+          "force_n": null,
+          "at_range_limit": false
+        }
+      }
+    },
+    {
+      "pose": "CALIB_MID",
+      "sides": {
+        "left": {
+          "joint": "link_012_joint",
+          "slide_position_m": -0.0115566140447875,
+          "compression_m": 0.0115566140447875,
+          "slide_velocity_m_s": 0.0,
+          "force_n": null,
+          "at_range_limit": false
+        },
+        "right": {
+          "joint": "link_023_joint",
+          "slide_position_m": -0.0115566140598085,
+          "compression_m": 0.0115566140598085,
+          "slide_velocity_m_s": 0.0,
+          "force_n": null,
+          "at_range_limit": false
+        }
+      }
+    },
+    {
+      "pose": "EXTEND",
+      "sides": {
+        "left": {
+          "joint": "link_012_joint",
+          "slide_position_m": 0.0,
+          "compression_m": -0.0,
+          "slide_velocity_m_s": 0.0,
+          "force_n": null,
+          "at_range_limit": true
+        },
+        "right": {
+          "joint": "link_023_joint",
+          "slide_position_m": 0.0,
+          "compression_m": -0.0,
+          "slide_velocity_m_s": 0.0,
+          "force_n": null,
+          "at_range_limit": true
+        }
+      }
+    }
+  ],
+  "verified": [
+    "slide mapping",
+    "23 mm provisional stroke",
+    "60 N user-supplied nominal force",
+    "CROUCH/MID/EXTEND compression coordinates"
+  ],
+  "unverified": [
+    "nominal-force tolerance",
+    "compressed force",
+    "physical stiffness",
+    "physical damping",
+    "physical center distance"
+  ]
+}

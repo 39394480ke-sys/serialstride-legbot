@@ -1,0 +1,21 @@
+schema_version: 1
+selected_profile: nominal
+profiles:
+  ideal:
+    active_hinge: {damping: 0.0, frictionloss: 0.0, armature: 0.0}
+    passive_hinge: {damping: 0.0, frictionloss: 0.0, armature: 0.0}
+    wheel_hinge: {damping: 0.0, frictionloss: 0.0, armature: 0.0}
+    gas_slide: {damping: 0.0, frictionloss: 0.0, armature: 0.0}
+  nominal:
+    active_hinge: {damping: 0.05, frictionloss: 0.0, armature: 0.0001}
+    passive_hinge: {damping: 0.05, frictionloss: 0.0, armature: 0.0001}
+    wheel_hinge: {damping: 0.0, frictionloss: 0.0, armature: 0.0}
+    gas_slide: {damping: 0.0, frictionloss: 0.0, armature: 0.0001}
+source: Values preserved from the pre-migration Phase 1-3 dynamics snapshot; not identified from hardware.
+confidence: ESTIMATED
+status: PROVISIONAL
+validation:
+  report: results/passive_profile_report.json
+  numerical_status: VERIFIED
+  physical_identification_status: UNVERIFIED
+  selected_baseline_reason: nominal dissipates a standard post-pulse state while ideal preserves it for mechanism debugging

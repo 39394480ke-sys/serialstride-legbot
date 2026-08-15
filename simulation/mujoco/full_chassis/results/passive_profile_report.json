@@ -1,0 +1,153 @@
+{
+  "schema_version": 1,
+  "status": "PASS_WITH_PROVISIONAL_NOMINAL_PARAMETERS",
+  "selected_baseline": "nominal",
+  "gas_spring_force_enabled": false,
+  "profiles": {
+    "ideal": {
+      "parameters": {
+        "active_hinge": {
+          "damping": 0.0,
+          "frictionloss": 0.0,
+          "armature": 0.0
+        },
+        "passive_hinge": {
+          "damping": 0.0,
+          "frictionloss": 0.0,
+          "armature": 0.0
+        },
+        "wheel_hinge": {
+          "damping": 0.0,
+          "frictionloss": 0.0,
+          "armature": 0.0
+        },
+        "gas_slide": {
+          "damping": 0.0,
+          "frictionloss": 0.0,
+          "armature": 0.0
+        }
+      },
+      "zero_control_1s_maximum_qvel": 1.66505610200039e-11,
+      "leg_pulse_0p01nm_20ms": {
+        "left_joint_a_motor": {
+          "target_joint": "left_joint_a",
+          "target_qvel": 0.0553580571598157
+        },
+        "left_joint_b_motor": {
+          "target_joint": "left_joint_b",
+          "target_qvel": 0.0625149457800614
+        },
+        "right_joint_a_motor": {
+          "target_joint": "right_joint_a",
+          "target_qvel": 0.0553580571042254
+        },
+        "right_joint_b_motor": {
+          "target_joint": "right_joint_b",
+          "target_qvel": 0.0625232975512434
+        }
+      },
+      "pulse_removed_coast": {
+        "duration_s": 0.5,
+        "initial_qvel_norm": 0.12276712236255101,
+        "final_qvel_norm": 0.1229608394794439,
+        "retained_ratio": 1.001577923414388
+      },
+      "free_ground_5s": {
+        "keyframes": 11,
+        "duration_each_s": 5.0,
+        "maximum_qvel_native": 1.23445547375374,
+        "maximum_qacc_native": 4.2232051277675,
+        "maximum_closure_residual_m": 9.229773310969762e-05,
+        "minimum_contact_distance_m": 0.000988885572425414,
+        "status": "PASS_NUMERICAL"
+      },
+      "drop_test_5s": {
+        "keyframes": 11,
+        "duration_each_s": 5.0,
+        "maximum_qvel_native": 0.80403992885961,
+        "maximum_qacc_native": 4.26705502303665,
+        "maximum_closure_residual_m": 9.229782931960583e-05,
+        "minimum_contact_distance_m": 0.000988885126230542,
+        "status": "PASS_NUMERICAL"
+      }
+    },
+    "nominal": {
+      "parameters": {
+        "active_hinge": {
+          "damping": 0.05,
+          "frictionloss": 0.0,
+          "armature": 0.0001
+        },
+        "passive_hinge": {
+          "damping": 0.05,
+          "frictionloss": 0.0,
+          "armature": 0.0001
+        },
+        "wheel_hinge": {
+          "damping": 0.0,
+          "frictionloss": 0.0,
+          "armature": 0.0
+        },
+        "gas_slide": {
+          "damping": 0.0,
+          "frictionloss": 0.0,
+          "armature": 0.0001
+        }
+      },
+      "zero_control_1s_maximum_qvel": 3.76317554522377e-13,
+      "leg_pulse_0p01nm_20ms": {
+        "left_joint_a_motor": {
+          "target_joint": "left_joint_a",
+          "target_qvel": 0.0389774139346318
+        },
+        "left_joint_b_motor": {
+          "target_joint": "left_joint_b",
+          "target_qvel": 0.0413977054860115
+        },
+        "right_joint_a_motor": {
+          "target_joint": "right_joint_a",
+          "target_qvel": 0.0389772663740833
+        },
+        "right_joint_b_motor": {
+          "target_joint": "right_joint_b",
+          "target_qvel": 0.041372367035556
+        }
+      },
+      "pulse_removed_coast": {
+        "duration_s": 0.5,
+        "initial_qvel_norm": 0.05965495979122938,
+        "final_qvel_norm": 1.5394540630312143e-05,
+        "retained_ratio": 0.0002580596933463274
+      },
+      "free_ground_5s": {
+        "keyframes": 11,
+        "duration_each_s": 5.0,
+        "maximum_qvel_native": 0.177852575943487,
+        "maximum_qacc_native": 0.126602188259349,
+        "maximum_closure_residual_m": 4.95873869566206e-05,
+        "minimum_contact_distance_m": 0.000990492170529947,
+        "status": "PASS_NUMERICAL"
+      },
+      "drop_test_5s": {
+        "keyframes": 11,
+        "duration_each_s": 5.0,
+        "maximum_qvel_native": 0.178979052010279,
+        "maximum_qacc_native": 0.12740518181616,
+        "maximum_closure_residual_m": 4.9587372692582326e-05,
+        "minimum_contact_distance_m": 0.000990492175652606,
+        "status": "PASS_NUMERICAL"
+      }
+    }
+  },
+  "evidence_classification": {
+    "verified": [
+      "ideal and nominal models compile without changing authoritative geometry",
+      "zero-control keyframes, four leg-motor pulse signs, and left-right response symmetry",
+      "nominal damping increases post-pulse velocity decay relative to ideal",
+      "all 11 keyframes in free-ground and drop scenes remain numerically stable for 5 s"
+    ],
+    "unverified": [
+      "physical damping, dry friction, armature, settling time, and decay-rate agreement"
+    ]
+  }
+}
