@@ -123,17 +123,22 @@ class JointLimitTests(unittest.TestCase):
             expected_actuators,
         )
 
-    def test_pre_migration_dynamics_preserves_geometry_keyframes(self) -> None:
+    def test_migrated_dynamics_preserves_geometry_keyframes(self) -> None:
         geometry_keys = self.geometry.getroot().findall("./keyframe/key")
         dynamics_keys = self.dynamics.getroot().findall("./keyframe/key")
-        dynamics_indices = {
-            key.get("name"): index for index, key in enumerate(dynamics_keys)
-        }
-        self.assertTrue(
-            set(key.get("name") for key in geometry_keys) <= set(dynamics_indices)
+        self.assertEqual(
+            [key.get("name") for key in dynamics_keys],
+            [key.get("name") for key in geometry_keys],
         )
         for geometry_index, key in enumerate(geometry_keys):
-            dynamics_index = dynamics_indices[key.get("name")]
+            dynamics_index = geometry_index
+            self.assertEqual(
+                dynamics_keys[dynamics_index].get("qpos"), key.get("qpos")
+            )
+            self.assertEqual(
+                dynamics_keys[dynamics_index].get("ctrl"), "0 0 0 0 0 0"
+            )
+            self.assertNotIn("act", dynamics_keys[dynamics_index].attrib)
             _, geometry_residual, geometry_sensors = self.runtime.evaluate(
                 GEOMETRY_PATH, 0, geometry_index
             )
@@ -144,6 +149,21 @@ class JointLimitTests(unittest.TestCase):
             self.assertAlmostEqual(geometry_residual, dynamics_residual, places=12)
             for old, new in zip(geometry_sensors, dynamics_sensors):
                 self.assertAlmostEqual(old, new, places=10, msg=key.get("name"))
+
+    def test_dynamics_uses_six_direct_torque_motors(self) -> None:
+        root = self.dynamics.getroot()
+        self.assertEqual(root.findall("./actuator/position"), [])
+        self.assertEqual(
+            [(node.get("name"), node.get("joint"), node.get("gear")) for node in root.findall("./actuator/motor")],
+            [
+                ("left_joint_a_motor", "left_joint_a", "1"),
+                ("left_joint_b_motor", "left_joint_b", "1"),
+                ("right_joint_a_motor", "right_joint_a", "1"),
+                ("right_joint_b_motor", "right_joint_b", "1"),
+                ("left_wheel_motor", "left_wheel_joint", "1"),
+                ("right_wheel_motor", "right_wheel_joint", "1"),
+            ],
+        )
 
     def test_gas_spring_slide_coordinates(self) -> None:
         root = self.geometry.getroot()

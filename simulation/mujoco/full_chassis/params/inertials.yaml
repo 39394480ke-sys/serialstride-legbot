@@ -2,7 +2,7 @@
 # DO NOT EDIT: body_mass_map.csv is the only hand-edited source.
 schema_version: 1
 source: "params/body_mass_map.csv"
-geometry_sha256: "1a5fb12f0e452dd656210dcaefd5d75fb50e9be1d764190c68096f0abc072d13"
+geometry_sha256: "e7e1f21c22bbcc8846be8548e071819e72ccfad49df203704b56205417b800ea"
 bodies:
   base_link:
     category: "base_link"

@@ -13,7 +13,12 @@ from collections import defaultdict
 from pathlib import Path
 
 from joint_limits import joint_qpos_indices, load_config
-from sync_inertials import DYNAMICS_PATH, ROOT, require
+from sync_inertials import (
+    DYNAMICS_PATH,
+    GEOMETRY_PATH,
+    ROOT,
+    require,
+)
 
 sys.path.insert(0, str(ROOT))
 from validate_model import MuJoCo, _numbers_in_section, _variant  # noqa: E402
@@ -39,8 +44,26 @@ def wrapped_angle_error(actual: float, expected: float) -> float:
 
 def main() -> None:
     config = load_config()
+    # Use migrated inertials/passive parameters, but transplant the read-only
+    # geometry debug actuators into this in-memory scan model. Production
+    # dynamics remains a six-motor direct-torque model.
     tree = ET.parse(DYNAMICS_PATH)
     root = tree.getroot()
+    geometry_root = ET.parse(GEOMETRY_PATH).getroot()
+    actuator = root.find("./actuator")
+    geometry_actuator = geometry_root.find("./actuator")
+    require(actuator is not None and geometry_actuator is not None, "missing actuator section")
+    for node in list(actuator):
+        actuator.remove(node)
+    for node in list(geometry_actuator):
+        copy = ET.fromstring(ET.tostring(node))
+        copy.set("kp", "10")
+        actuator.append(copy)
+    for key, geometry_key in zip(
+        root.findall("./keyframe/key"), geometry_root.findall("./keyframe/key")
+    ):
+        key.set("ctrl", geometry_key.get("ctrl", ""))
+        key.set("act", geometry_key.get("act", ""))
     joint_names = [
         joint.get("name", "") for joint in root.findall("./worldbody//joint")
     ]
@@ -57,6 +80,12 @@ def main() -> None:
         side: config["gas_spring_slides"][side]["joint"]
         for side in ("left", "right")
     }
+    # Workspace evidence must remain independent of the provisional gas force.
+    for name in slides.values():
+        joint = root.find(f'.//joint[@name="{name}"]')
+        require(joint is not None, f"missing gas-spring slide {name}")
+        joint.attrib.pop("stiffness", None)
+        joint.attrib.pop("springref", None)
     modal = config["modal_coordinates"]
     rotation_values = linspace(
         *modal["rotation"]["observation_range"], ROTATION_GRID_SIZE
@@ -76,6 +105,25 @@ def main() -> None:
         directory = Path(temporary)
         for side in ("left", "right"):
             for shape_index, target_shape in enumerate(shape_values):
+                shape_controls = (
+                    (0.0, target_shape, 0.0, 0.0)
+                    if side == "left"
+                    else (0.0, 0.0, 0.0, target_shape)
+                )
+                shape_variant = ET.ElementTree(ET.fromstring(ET.tostring(root)))
+                shape_path = _variant(shape_variant, shape_controls, directory)
+                shape_text = runtime.formatted_data(
+                    shape_path, steps=SETTLE_STEPS, keyframe=0
+                )
+                shape_qpos = _numbers_in_section(shape_text, "QPOS")
+                shape_velocity = max(
+                    map(abs, _numbers_in_section(shape_text, "QVEL")), default=0.0
+                )
+                shape_residual = max(
+                    map(abs, _numbers_in_section(shape_text, "EFC_POS")), default=0.0
+                )
+                require(shape_velocity < VELOCITY_LIMIT, f"{side} {target_shape=}: shape solve did not settle")
+                require(shape_residual < RESIDUAL_LIMIT_M, f"{side} {target_shape=}: shape residual {shape_residual}")
                 for target_rotation in rotation_values:
                     q_a = target_shape + target_rotation
                     q_b = target_shape - target_rotation
@@ -85,9 +133,15 @@ def main() -> None:
                         else (0.0, 0.0, target_rotation, target_shape)
                     )
                     variant = ET.ElementTree(ET.fromstring(ET.tostring(root)))
+                    rotated_qpos = list(shape_qpos)
+                    rotated_qpos[indices[f"{side}_joint_a"]] += target_rotation
+                    rotated_qpos[indices[f"{side}_joint_b"]] -= target_rotation
+                    variant.getroot().find('./keyframe/key[@name="CALIB_MID"]').set(
+                        "qpos", " ".join(f"{value:.15g}" for value in rotated_qpos)
+                    )
                     path = _variant(variant, controls, directory)
                     text = runtime.formatted_data(
-                        path, steps=SETTLE_STEPS, keyframe=0
+                        path, steps=0, keyframe=0
                     )
                     qpos = _numbers_in_section(text, "QPOS")
                     qvel = _numbers_in_section(text, "QVEL")

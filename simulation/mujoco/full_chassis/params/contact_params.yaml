@@ -1,0 +1,37 @@
+schema_version: 1
+wheel_collision:
+  radius_m: 0.0429968
+  half_width_m: 0.02475
+  size_source: CAD wheel-mesh bounding box; user confirmed the model radius and width match the physical tire
+  confidence: USER_CONFIRMED_MODEL_GEOMETRY
+base_collision:
+  half_size_m: [0.12581208, 0.047640137, 0.072]
+  center_m: [0.0, 0.0, 0.0]
+  size_source: CAD base-link mesh bounding box
+  confidence: CAD_DERIVED
+link_collision_mesh_bodies:
+  [link_002, link_003, link_004, link_005, link_006, link_007, link_008, link_009,
+   link_011, link_012, link_013, link_014, link_015, link_016, link_017, link_018,
+   link_019, link_020, link_021, link_022, link_023, link_024]
+link_collision_source: convex hulls of the authoritative CAD visual meshes, copied without changing pose
+link_collision_confidence: CAD_DERIVED
+link_ground_visual_validation:
+  status: USER_CONFIRMED_CURRENT_SCENES
+  observation: user tested all keyframes in free_ground.xml and drop_test.xml after the free-base orientation fix and observed no ground penetration, abnormal jitter, numerical explosion, or visible closed-chain separation
+  date: 2026-08-16
+ground:
+  sliding_friction: 0.8
+  torsional_friction: 0.005
+  rolling_friction: 0.0001
+  contact_margin_m: 0.001
+  solref: [0.005, 1.0]
+  solimp: [0.95, 0.99, 0.001]
+  source: conservative simulation starting point; requires physical identification
+  status: PROVISIONAL
+scene:
+  timestep_s: 0.001
+  gravity_m_s2: [0.0, 0.0, -9.81]
+  base_orientation_quat_wxyz: [4.32978028117747e-17, 4.32978028117747e-17, -0.707106781186547, 0.707106781186548]
+  base_orientation_source: MuJoCo-compiled qpos0 for authoritative base_link euler orientation
+  calib_mid_wheel_contact_base_z_m: 0.1581569
+  drop_height_m: 0.005

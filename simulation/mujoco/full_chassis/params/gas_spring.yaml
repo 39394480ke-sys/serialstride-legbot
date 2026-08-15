@@ -1,0 +1,16 @@
+schema_version: 1
+model: "F = force_extended_n + stiffness_n_per_m * compression_m - damping_n_s_per_m * slide_velocity_m_s"
+coordinate: q=0 at maximum extension; compression=-q
+enabled: false
+slides: [link_012_joint, link_023_joint]
+stroke_m: 0.023
+extended_center_distance_m: null
+force_extended_n: 60.0
+force_extended_tolerance_n: null
+force_compressed_n: null
+stiffness_n_per_m: null
+damping_n_s_per_m: null
+source: Physical stroke and 60 N nominal force supplied by the user; force tolerance, force-rise curve, and damping are unknown. Force application is intentionally deferred.
+confidence: USER_SUPPLIED_NOMINAL_FORCE
+status: RECORDED_NOT_MODELED
+note: Keep the nominal force as evidence, but do not apply gas-spring force in the current basic-dynamics model or the initial reinforcement-learning environment. Resume it only as an explicit later increment.

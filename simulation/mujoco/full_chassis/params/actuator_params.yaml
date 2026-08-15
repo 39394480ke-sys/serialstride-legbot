@@ -1,0 +1,87 @@
+schema_version: 1
+coordinate: direct_joint_torque_nm
+world_forward_axis: +X
+wheel_forward_command:
+  left_wheel_motor_sign: -1
+  right_wheel_motor_sign: +1
+  verification: CALIB_MID ground rollout with [-0.2, +0.2] Nm moved the base toward world +X
+  verification_duration_s: 0.1
+  forward_test_base_x_m: 0.00482562542974066
+  reverse_test_base_x_m: -0.00715228131670396
+  status: MUJOCO_VERIFIED
+motors:
+  - {name: left_joint_a_motor, joint: left_joint_a, role: leg, gear: 1.0}
+  - {name: left_joint_b_motor, joint: left_joint_b, role: leg, gear: 1.0}
+  - {name: right_joint_a_motor, joint: right_joint_a, role: leg, gear: 1.0}
+  - {name: right_joint_b_motor, joint: right_joint_b, role: leg, gear: 1.0}
+  - {name: left_wheel_motor, joint: left_wheel_joint, role: wheel, gear: 1.0}
+  - {name: right_wheel_motor, joint: right_wheel_joint, role: wheel, gear: 1.0}
+limits:
+  leg:
+    model: DM-J4310-2EC V1.2 (24V)
+    rated_voltage_v: 24.0
+    operating_voltage_range_v: [20.0, 28.0]
+    rated_phase_current_a: 4.9
+    rated_supply_current_a_at_24v: 3.1
+    peak_phase_current_a: 20.0
+    peak_supply_current_a_at_24v: 16.5
+    rated_torque_nm: 3.5
+    peak_torque_nm: 12.5
+    rated_velocity_rpm: 120.0
+    rated_velocity_rad_s: 12.5663706143592
+    no_load_max_velocity_rpm: 200.0
+    max_velocity_rad_s: 20.9439510239320
+    torque_command_limit_nm: 12.5
+    velocity_command_limit_rad_s: 20.9439510239320
+    integrated_reduction_ratio: 10.0
+    phase_inductance_h: 0.000320
+    phase_resistance_ohm: 0.580
+    pole_pairs: 14
+    motor_mass_kg: 0.325
+    encoder_resolution_bits: 16
+    encoder_count: 2
+    encoder_type: magnetic_single_turn
+    torque_feedback_bits: 12
+    velocity_feedback_bits: 12
+    mit_direct_torque_command: {kp: 0.0, kd: 0.0, field: t_ff, unit: Nm}
+    thermal_test_observations:
+      - {torque_nm: 3.2, speed_rpm: 120.0, start_temperature_c_approx: 35.0, end_temperature_c_approx: 99.0, duration_s_approx: 700.0}
+      - {torque_nm: 3.5, speed_rpm: 120.0, start_temperature_c_approx: 32.0, end_temperature_c_approx: 99.0, duration_s_approx: 320.0}
+    thermal_observation_status: PLOT_READ_APPROXIMATE
+    torque_speed_model_status: UNIMPLEMENTED_INSUFFICIENT_FULL_ENVELOPE_DATA
+    source: user-supplied DM-J4310-2EC V1.2 24V manufacturer manuals and performance plots, 2026-08-16
+    supersedes:
+      source: user-supplied legacy parameter-table screenshot, 2026-08-15
+      values: {rated_torque_nm: 3.0, peak_torque_nm: 7.0, rated_current_a: 2.5, peak_current_a: 7.5, phase_inductance_h: 0.000340, phase_resistance_ohm: 0.650, motor_mass_kg: 0.300}
+    status: DATASHEET
+  wheel:
+    model: DM-H6215 (24V)
+    rated_voltage_v: 24.0
+    rated_current_a: 2.5
+    peak_current_a: 4.3
+    rated_torque_nm: 1.0
+    peak_torque_nm: 2.0
+    rated_velocity_rpm: 120.0
+    rated_velocity_rad_s: 12.5663706143592
+    no_load_max_velocity_rpm: 320.0
+    max_velocity_rad_s: 33.5103216382911
+    torque_command_limit_nm: 2.0
+    velocity_command_limit_rad_s: 33.5103216382911
+    integrated_reduction_ratio: 1.0
+    phase_inductance_h: 0.002000
+    phase_resistance_ohm: 2.5
+    pole_pairs: 14
+    motor_mass_kg: 0.360
+    encoder_type: hall
+    torque_feedback_bits: 12
+    velocity_feedback_bits: 12
+    mit_direct_torque_command: {kp: 0.0, kd: 0.0, field: t_ff, unit: Nm}
+    torque_speed_model_status: UNIMPLEMENTED_INSUFFICIENT_FULL_ENVELOPE_DATA
+    source: user-supplied DM-H6215 V1.0 manufacturer manual and V2 tutorial, 2026-08-16
+    status: DATASHEET
+source_documents:
+  dm_h6215_manual_v1_0_sha256: a8aa385a8e9c43f1d98f86a6a23a49fccea04c5917512c34037cba44995c90bf
+  dm_h6215_tutorial_v2_sha256: eec66c865d8fa5e2f3ca3594b281f727c80d5ff7549371950af7232d10416271
+  dm_j4310_v1_2_chinese_manual_sha256: 89da6e8f30b384df2ac1b2d4ae741b611828b2d97d2656e6fb026b31c66553ee
+  dm_j4310_v1_2_english_manual_sha256: a271c7c9b0f409547b074393faf676826ecf3d31b7c36fa9ae751554ae161f4c
+note: Motor gear=1 represents the external joint mapping. The joint motor's internal 10:1 reducer is already reflected in its output-side datasheet torque and speed. Manufacturer performance plots do not provide a complete torque-speed envelope, so the MJCF remains a saturated ideal torque source rather than inventing a speed-dependent curve.

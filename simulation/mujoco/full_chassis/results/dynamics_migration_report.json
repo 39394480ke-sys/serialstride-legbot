@@ -1,0 +1,151 @@
+{
+  "schema_version": 1,
+  "status": "PASS_WITH_PROVISIONAL_INPUTS",
+  "authoritative_geometry_sha256": "e7e1f21c22bbcc8846be8548e071819e72ccfad49df203704b56205417b800ea",
+  "source_sha256": "9387924d3dad5ea2097e8953228b8de0cfd61661b36b10f039596c25b4e14d55",
+  "generated_dynamics_sha256": "ce3a19958bca0bb0207fce83ccfb6cecd9fca28ffa8bf22dedb3101321f45f46",
+  "static": {
+    "counts": {
+      "bodies": 25,
+      "joints": 24,
+      "connects": 6,
+      "tendons": 4,
+      "motors": 6,
+      "position_actuators": 0,
+      "keyframes": 11,
+      "sensors": 2
+    },
+    "mass_kg": 3.769544786179999
+  },
+  "runtime": {
+    "mujoco_version": "3.9.0",
+    "maximum_keyframe_closure_residual_m": 1.43323897194847e-09,
+    "maximum_geometry_dynamics_sensor_delta_m": 0.0,
+    "scenes": {
+      "fixed_base.xml": {
+        "compile": "PASS",
+        "initial_closure_residual_m": 1.1923805970370804e-09
+      },
+      "free_ground.xml": {
+        "compile": "PASS",
+        "initial_closure_residual_m": 1.1923805970370804e-09,
+        "all_keyframes_0p5s_collision_contact_check": "PASS",
+        "minimum_base_origin_z_m": 0.0486378555649443,
+        "minimum_contact_distance_m": 0.000988062574560362,
+        "maximum_rollout_closure_residual_m": 5.2798744782371957e-05,
+        "maximum_tendon_limit_residual_rad": 0.0539788471426415,
+        "dynamic_closure_interpretation": "MEASURED_CONNECT_SITE_SEPARATION",
+        "all_keyframes_5s_numerical_stability_check": "PASS",
+        "all_keyframes_5s_maximum_qvel_native": 0.177852575943487,
+        "all_keyframes_5s_maximum_qacc_native": 0.126602188259349,
+        "all_keyframes_5s_maximum_closure_residual_m": 4.95873869566206e-05,
+        "all_keyframes_5s_minimum_contact_distance_m": 0.000990492170529947,
+        "physical_settling_acceptance": "UNVERIFIED_PROVISIONAL_PASSIVE_PARAMETERS"
+      },
+      "drop_test.xml": {
+        "compile": "PASS",
+        "initial_closure_residual_m": 1.1923805970370804e-09,
+        "all_keyframes_0p5s_collision_contact_check": "PASS",
+        "minimum_base_origin_z_m": 0.0486378555658707,
+        "minimum_contact_distance_m": 0.000989505720719583,
+        "maximum_rollout_closure_residual_m": 5.150733650255394e-05,
+        "maximum_tendon_limit_residual_rad": 0.0421989079596189,
+        "dynamic_closure_interpretation": "MEASURED_CONNECT_SITE_SEPARATION",
+        "all_keyframes_5s_numerical_stability_check": "PASS",
+        "all_keyframes_5s_maximum_qvel_native": 0.178979052010279,
+        "all_keyframes_5s_maximum_qacc_native": 0.12740518181616,
+        "all_keyframes_5s_maximum_closure_residual_m": 4.9587372692582326e-05,
+        "all_keyframes_5s_minimum_contact_distance_m": 0.000990492175652606,
+        "physical_settling_acceptance": "UNVERIFIED_PROVISIONAL_PASSIVE_PARAMETERS"
+      }
+    }
+  },
+  "interfaces": {
+    "geometry_debug_actuators": 4,
+    "dynamics_torque_motors": [
+      "left_joint_a_motor",
+      "left_joint_b_motor",
+      "right_joint_a_motor",
+      "right_joint_b_motor",
+      "left_wheel_motor",
+      "right_wheel_motor"
+    ],
+    "keyframes": [
+      "CALIB_MID",
+      "CROUCH",
+      "EXTEND",
+      "INTERMEDIATE_N025",
+      "INTERMEDIATE_N0125",
+      "INTERMEDIATE_P0125",
+      "INTERMEDIATE_P025",
+      "ROTATION_N180",
+      "ROTATION_N090",
+      "ROTATION_P090",
+      "ROTATION_P180"
+    ],
+    "wheel_sensor_order": [
+      "right_wheel_position",
+      "left_wheel_position"
+    ],
+    "world_forward_axis": "+X",
+    "forward_wheel_torque_signs": {
+      "left": -1,
+      "right": 1
+    },
+    "motor_limits": {
+      "leg": {
+        "model": "DM-J4310-2EC V1.2 (24V)",
+        "rated_torque_nm": 3.5,
+        "peak_torque_nm": 12.5,
+        "rated_velocity_rpm": 120.0,
+        "no_load_max_velocity_rpm": 200.0,
+        "source_status": "DATASHEET"
+      },
+      "wheel": {
+        "model": "DM-H6215 (24V)",
+        "rated_torque_nm": 1.0,
+        "peak_torque_nm": 2.0,
+        "rated_velocity_rpm": 120.0,
+        "no_load_max_velocity_rpm": 320.0,
+        "source_status": "DATASHEET"
+      }
+    }
+  },
+  "evidence_classification": {
+    "verified": [
+      "source and geometry byte hashes",
+      "deterministic geometry-to-dynamics generation",
+      "mass/inertia overlay and MuJoCo compilation",
+      "four geometry debug actuators replaced by six dynamics torque motors",
+      "datasheet peak-torque limits emitted as motor control and force limits",
+      "tendons, keyframe qpos, slide convention, closed chains, and wheel sensors preserved",
+      "fixed-base, free-ground, and low-drop scene compilation",
+      "free/drop keyframes preserve the authoritative fixed-base orientation and sensor pose",
+      "left-negative/right-positive wheel torque moves the base toward world +X",
+      "all CAD link visuals have separate ground-only convex-hull collision proxies",
+      "all free/drop keyframes stay within 1 mm ground-contact penetration after 0.5 s",
+      "all free/drop keyframes remain finite with sub-0.1 mm connect residual over 5 s"
+    ],
+    "user_observed": [
+      "SolidWorks-assigned main-body masses approximately agree with the physical build",
+      "gas-spring physical stroke is approximately 23 mm",
+      "gas-spring nominal force is 60 N",
+      "the CAD wheel model radius and width match the physical tire",
+      "free/drop scenes previously showed link visuals sinking below the ground",
+      "all keyframes in the current free-ground and drop scenes showed no ground penetration, abnormal jitter, numerical explosion, or visible closed-chain separation in the MuJoCo Viewer"
+    ],
+    "ai_inference": [
+      "none for the disabled gas-spring force model"
+    ],
+    "unverified": [
+      "datasheet torque and speed limits under the installed supply and drive configuration",
+      "motor thermal derating and duration-dependent continuous-torque behavior",
+      "physical joint damping, dry friction, and rotor inertia",
+      "gas-spring nominal-force tolerance, physical stiffness, damping, and force curve",
+      "gas-spring dynamic effect, intentionally disabled at the user's request",
+      "ground friction and load-bearing contact behavior",
+      "physical settling time with identified damping and friction",
+      "precise physical whole-robot mass and pose-matched COM"
+    ]
+  }
+}
